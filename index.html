@@ -600,39 +600,69 @@
       bindHeader();
       renderTabs('dashboard');
       switchView('dashboard');
-      registerPWA();
-    }
+      registerPWA(){
+      // --- Base path detection (GitHub Pages compatible) ---
+      const BASE = (()=>{
+        // e.g. https://user.github.io/repo/path/index.html → /repo/path/
+        const p = location.pathname;
+        return p.endsWith('/') ? p : p.replace(/[^/]+$/, '');
+      })();
 
-    // Service Worker & Manifest via Blob (single-file trick) + Offline fallback
-    function registerPWA(){
-      // Skip SW if not allowed (canvas blob sandbox, file://, etc.) or disabled by flag
+      // Allow disabling SW via ?nosw=1 for debugging
       const params = new URLSearchParams(location.search);
       const noSW = params.get('nosw')==='1';
-      if(location.protocol==='blob:' || location.origin==='null' || noSW){
-        console.warn('SW skip. Reason:', {protocol: location.protocol, origin: location.origin, noSW});
-        if(noSW) toast('SW ideiglenesen kikapcsolva (?nosw=1)');
-        return;
-      }
+      if(noSW){ toast('SW ideiglenesen kikapcsolva (?nosw=1)'); return; }
 
+      // ---- Manifest using BASE ----
       const manifest = {
-        name: 'FamilyHub • Napi Kör', short_name: 'FamilyHub', start_url: '/', display: 'standalone', background_color: '#0b1020', theme_color: '#0b1020',
+        name: 'FamilyHub • Napi Kör', short_name: 'FamilyHub', start_url: BASE, scope: BASE, display: 'standalone', background_color: '#0b1020', theme_color: '#0b1020',
         icons: [192,512].map(sz=>({ src: svgIconDataURI(), sizes: `${sz}x${sz}`, type: 'image/png', purpose:'any maskable'}))
       };
       const mURL=URL.createObjectURL(new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'}));
       const link=document.createElement('link'); link.rel='manifest'; link.href=mURL; document.head.appendChild(link);
 
-      const offlineHTML = `<!doctype html><html lang="hu"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Offline • FamilyHub</title><style>body{margin:0;font-family:system-ui,Segoe UI,Roboto;background:#0b1020;color:#e6eefb;display:grid;place-items:center;height:100vh} .box{max-width:560px;padding:24px;border:1px solid #27406b;border-radius:16px;background:#0f1730;box-shadow:0 10px 40px rgba(0,0,0,.35)} h1{margin:0 0 8px} p{color:#9fb2d6} button{padding:10px 14px;border-radius:12px;border:1px solid #2a3a62;background:#152039;color:#fff;cursor:pointer} button:active{transform:translateY(1px)}</style></head><body><div class=\"box\"><h1>Offline mód</h1><p>Úgy tűnik, nincs hálózati kapcsolat és ez az oldal még nincs a gyorsítótárban.</p><p>Próbáld meg újra, vagy menj a kezdőlapra (ha korábban megnyitottad, offline is elérhető lehet).</p><div style=\"display:flex;gap:8px;margin-top:12px\"><button onclick=\"location.reload()\">Próbáld újra</button><button onclick=\"location.href='/'\">Kezdőlap</button></div></div></body></html>`;
+      // ---- Service Worker (external file under BASE) ----
+      // IMPORTANT: GitHub Pages NEM engedi blob: SW scriptet. Kell egy valós fájl: `${BASE}sw.js`.
+      // Az alábbi gombbal letöltheted a szükséges `sw.js` fájlt (a Beállítások/Diagnosztika részben), commitold az index mellé.
 
-      const swCode = `
-const CACHE = 'fhub-v3';
-self.addEventListener('install',e=>{ self.skipWaiting(); e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['/'])) ); });
+      if('serviceWorker' in navigator){
+        const swURL = new URL('sw.js', location.origin + BASE).toString();
+        navigator.serviceWorker.register(swURL, { scope: BASE }).then(reg=>{
+          console.info('ServiceWorker reg OK:', reg.scope);
+        }).catch(err=>{
+          console.error('ServiceWorker reg error', err);
+          toast('SW reg hiba: Ellenőrizd, hogy a sw.js a repo-ban van-e a '+BASE+' útvonalon.');
+        });
+      }
+
+      // Expose helper to download sw.js content
+      window.__FHUB_DOWNLOAD_SW__ = ()=>{
+        const swCode = makeSWCode(BASE);
+        const blob = new Blob([swCode], {type:'application/javascript'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'sw.js'; a.click();
+      };
+    }
+
+    function svgIconDataURI(){
+      const svg=`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><defs><linearGradient id='g' x1='0' x2='0' y1='0' y2='1'><stop offset='0%' stop-color='%234cc9f0'/><stop offset='100%' stop-color='%23b5179e'/></linearGradient></defs><rect rx='30' width='128' height='128' fill='url(%23g)'/><circle cx='43' cy='54' r='10' fill='white'/><circle cx='85' cy='54' r='10' fill='white'/><path d='M30 80c10-18 58-18 68 0-6 22-62 22-68 0z' fill='white'/></svg>`;
+      return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+    }
+
+    // Build the SW file content tailored to BASE
+    function makeSWCode(BASE){
+      const offlineHTML = `<!doctype html><html lang="hu"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Offline • FamilyHub</title><style>body{margin:0;font-family:system-ui,Segoe UI,Roboto;background:#0b1020;color:#e6eefb;display:grid;place-items:center;height:100vh} .box{max-width:560px;padding:24px;border:1px solid #27406b;border-radius:16px;background:#0f1730;box-shadow:0 10px 40px rgba(0,0,0,.35)} h1{margin:0 0 8px} p{color:#9fb2d6} button{padding:10px 14px;border-radius:12px;border:1px solid #2a3a62;background:#152039;color:#fff;cursor:pointer} button:active{transform:translateY(1px)}</style></head><body><div class=\"box\"><h1>Offline mód</h1><p>Úgy tűnik, nincs hálózati kapcsolat és ez az oldal még nincs a gyorsítótárban.</p><p>Próbáld meg újra, vagy menj a kezdőlapra.</p><div style=\"display:flex;gap:8px;margin-top:12px\"><button onclick=\"location.reload()\">Próbáld újra</button><button onclick=\"location.href='${'${BASE}'}'\">Kezdőlap</button></div></div></body></html>`;
+
+      return `
+const CACHE = 'fhub-v4';
+const BASE = ${JSON.stringify('${BASE}')}.replace(/^"|"$/g,''); // literal replacement at runtime not needed in file
+self.addEventListener('install',e=>{ self.skipWaiting(); e.waitUntil(caches.open(CACHE).then(c=>c.addAll([BASE]))) });
 self.addEventListener('activate',e=>{ self.clients.claim(); e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))))); });
 self.addEventListener('fetch',e=>{
   const req=e.request;
   if(req.mode==='navigate'){
     e.respondWith((async()=>{
       try{ const net=await fetch(req); const copy=net.clone(); caches.open(CACHE).then(c=>c.put(req, copy)); return net; }
-      catch(err){ const cached=await caches.match(req); if(cached) return cached; return new Response(${JSON.stringify(offlineHTML)}, { headers: {'Content-Type':'text/html; charset=utf-8'} }); }
+      catch(err){ const cached=await caches.match(req); if(cached) return cached; return new Response(${JSON.stringify(offlineHTML)}, { headers:{'Content-Type':'text/html; charset=utf-8'} }); }
     })());
     return;
   }
@@ -640,15 +670,7 @@ self.addEventListener('fetch',e=>{
 });
 self.addEventListener('message', e=>{ if(e.data&&e.data.type==='notify'&&self.registration.showNotification){ self.registration.showNotification(e.data.title||'FamilyHub', { body: e.data.body||'' }); }});
 `;
-      const swURL=URL.createObjectURL(new Blob([swCode],{type:'text/javascript'}));
-      if('serviceWorker' in navigator){
-        try{
-          navigator.serviceWorker.register(swURL, { scope: '/' }).then(reg=>{ console.info('ServiceWorker reg OK, scope =', reg.scope); }).catch(err=>{ console.error('ServiceWorker reg error', err); toast('SW reg hiba: lásd konzol'); });
-        }catch(e){ console.error('SW reg failed', e); toast('SW reg exception'); }
-      }
-    }
-
-    function svgIconDataURI(){
+    }(){
       const svg=`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><defs><linearGradient id='g' x1='0' x2='0' y1='0' y2='1'><stop offset='0%' stop-color='%234cc9f0'/><stop offset='100%' stop-color='%23b5179e'/></linearGradient></defs><rect rx='30' width='128' height='128' fill='url(%23g)'/><circle cx='43' cy='54' r='10' fill='white'/><circle cx='85' cy='54' r='10' fill='white'/><path d='M30 80c10-18 58-18 68 0-6 22-62 22-68 0z' fill='white'/></svg>`;
       return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
     }
