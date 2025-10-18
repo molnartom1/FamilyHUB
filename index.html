@@ -610,6 +610,13 @@
 
     // Service Worker & Manifest via Blob (single-file trick) + Offline fallback
     function registerPWA(){
+      // Detect environments where SW is not allowed (e.g., blob: sandbox preview)
+      if(location.protocol === 'blob:' || location.origin === 'null'){
+        console.warn('Service Worker nem engedélyezett ebben a környezetben (blob: URL).');
+        toast('Ebben a nézetben nincs SW (blob URL). Nyisd meg localhost/https alatt.');
+        return; // graceful skip
+      }
+
       const manifest = {
         name: 'FamilyHub • Napi Kör',
         short_name: 'FamilyHub',
@@ -624,7 +631,7 @@
       const mURL=URL.createObjectURL(new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'}));
       const link=document.createElement('link'); link.rel='manifest'; link.href=mURL; document.head.appendChild(link);
 
-      const offlineHTML = `<!doctype html><html lang="hu"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Offline • FamilyHub</title><style>body{margin:0;font-family:system-ui,Segoe UI,Roboto;background:#0b1020;color:#e6eefb;display:grid;place-items:center;height:100vh} .box{max-width:560px;padding:24px;border:1px solid #27406b;border-radius:16px;background:#0f1730;box-shadow:0 10px 40px rgba(0,0,0,.35)} h1{margin:0 0 8px} p{color:#9fb2d6} button{padding:10px 14px;border-radius:12px;border:1px solid #2a3a62;background:#152039;color:#fff;cursor:pointer} button:active{transform:translateY(1px)}</style></head><body><div class="box"><h1>Offline mód</h1><p>Úgy tűnik, nincs hálózati kapcsolat és ez az oldal még nincs a gyorsítótárban.</p><p>Próbáld meg újra, vagy menj a kezdőlapra (ha korábban megnyitottad, offline is elérhető lehet).</p><div style="display:flex;gap:8px;margin-top:12px"><button onclick="location.reload()">Próbáld újra</button><button onclick="location.href='/'">Kezdőlap</button></div></div></body></html>`;
+      const offlineHTML = `<!doctype html><html lang="hu"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Offline • FamilyHub</title><style>body{margin:0;font-family:system-ui,Segoe UI,Roboto;background:#0b1020;color:#e6eefb;display:grid;place-items:center;height:100vh} .box{max-width:560px;padding:24px;border:1px solid #27406b;border-radius:16px;background:#0f1730;box-shadow:0 10px 40px rgba(0,0,0,.35)} h1{margin:0 0 8px} p{color:#9fb2d6} button{padding:10px 14px;border-radius:12px;border:1px solid #2a3a62;background:#152039;color:#fff;cursor:pointer} button:active{transform:translateY(1px)}</style></head><body><div class=\"box\"><h1>Offline mód</h1><p>Úgy tűnik, nincs hálózati kapcsolat és ez az oldal még nincs a gyorsítótárban.</p><p>Próbáld meg újra, vagy menj a kezdőlapra (ha korábban megnyitottad, offline is elérhető lehet).</p><div style=\"display:flex;gap:8px;margin-top:12px\"><button onclick=\"location.reload()\">Próbáld újra</button><button onclick=\"location.href='/'\">Kezdőlap</button></div></div></body></html>`;
 
       const swCode = `
 const CACHE = 'fhub-v2';
@@ -633,22 +640,13 @@ self.addEventListener('activate',e=>{ self.clients.claim(); e.waitUntil(caches.k
 self.addEventListener('fetch',e=>{
   const req=e.request;
   const url=new URL(req.url);
-  // Navigation requests: hybrid strategy
   if(req.mode==='navigate'){
     e.respondWith((async()=>{
-      try{
-        const net=await fetch(req);
-        const copy=net.clone(); caches.open(CACHE).then(c=>c.put(req, copy));
-        return net;
-      }catch(err){
-        const cached=await caches.match(req);
-        if(cached) return cached;
-        return new Response(${JSON.stringify(offlineHTML)}, { headers: {'Content-Type':'text/html; charset=utf-8'} });
-      }
+      try{ const net=await fetch(req); const copy=net.clone(); caches.open(CACHE).then(c=>c.put(req, copy)); return net; }
+      catch(err){ const cached=await caches.match(req); if(cached) return cached; return new Response(${JSON.stringify(offlineHTML)}, { headers: {'Content-Type':'text/html; charset=utf-8'} }); }
     })());
     return;
   }
-  // Other requests: cache-first then network
   e.respondWith(caches.match(req).then(r=> r || fetch(req).then(res=>{ const copy=res.clone(); caches.open(CACHE).then(c=>c.put(req, copy)); return res; }))); 
 });
 self.addEventListener('message', e=>{ if(e.data&&e.data.type==='notify'&&self.registration.showNotification){ self.registration.showNotification(e.data.title||'FamilyHub', { body: e.data.body||'' }); }});
@@ -666,7 +664,7 @@ self.addEventListener('message', e=>{ if(e.data&&e.data.type==='notify'&&self.re
       }
     }
 
-    function svgIconDataURI(){
+    function svgIconDataURI()(){
       const svg=`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><defs><linearGradient id='g' x1='0' x2='0' y1='0' y2='1'><stop offset='0%' stop-color='%234cc9f0'/><stop offset='100%' stop-color='%23b5179e'/></linearGradient></defs><rect rx='30' width='128' height='128' fill='url(%23g)'/><circle cx='43' cy='54' r='10' fill='white'/><circle cx='85' cy='54' r='10' fill='white'/><path d='M30 80c10-18 58-18 68 0-6 22-62 22-68 0z' fill='white'/></svg>`;
       return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
     }
@@ -674,11 +672,17 @@ self.addEventListener('message', e=>{ if(e.data&&e.data.type==='notify'&&self.re
     // ---- Diagnostics ----
     async function testSW(){
       if(!('serviceWorker' in navigator)) { toast('Nincs SW támogatás.'); return; }
+      if(location.protocol === 'blob:' || location.origin === 'null'){
+        toast('Ebben a nézetben a SW tiltva van (blob URL).');
+        console.warn('Tip: futtasd https:// vagy http://localhost alatt.');
+        return;
+      }
       try{
-        const reg = await navigator.serviceWorker.getRegistration('/');
-        console.log('SW getRegistration("/") →', reg);
-        if(reg){ toast('SW OK: '+(reg.scope||'/')); }
-        else { toast('SW nincs regisztrálva a / alatt'); }
+        const regs = await navigator.serviceWorker.getRegistrations();
+        if(!regs.length){ toast('Nem található SW regisztráció.'); return; }
+        const scopes = regs.map(r=>r.scope).join(', ');
+        console.log('Regs:', regs);
+        toast('SW aktív scope-ok: '+scopes);
       }catch(e){ console.error(e); toast('SW teszt hiba'); }
     }
 
