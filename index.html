@@ -1,0 +1,707 @@
+<!doctype html>
+<html lang="hu">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FamilyHub • Napi Kör — Családi PWA</title>
+  <meta name="description" content="Családi irányítópult + közös naptár, offline-first PWA, opcionális Google Calendar szinkronhoz előkészítve." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Ccircle cx='64' cy='64' r='60' fill='%230bb'/%3E%3Cpath d='M32 72c8-20 56-20 64 0-4 20-60 20-64 0z' fill='%23fff'/%3E%3Ccircle cx='48' cy='52' r='8' fill='%23fff'/%3E%3Ccircle cx='80' cy='52' r='8' fill='%23fff'/%3E%3C/svg%3E" />
+  <style>
+    :root{--bg:#0b1020;--card:#121a2f;--muted:#8aa1c0;--text:#e6eefb;--accent:#4cc9f0;--accent2:#b5179e;--ok:#2bd576;--warn:#f0c419;--danger:#ff5d6c}
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial,'Noto Sans','Apple Color Emoji','Segoe UI Emoji';background:linear-gradient(180deg,#0b1020,#0e1530);color:var(--text)}
+    .container{max-width:1100px;margin:0 auto;padding:16px}
+    header{position:sticky;top:0;background:rgba(11,16,32,.8);backdrop-filter:blur(8px);border-bottom:1px solid #1f2a44;z-index:10}
+    .brand{display:flex;align-items:center;gap:10px}
+    .brand .logo{width:28px;height:28px}
+    .brand h1{font-size:18px;margin:0}
+    .row{display:flex;gap:16px;flex-wrap:wrap}
+    .col{flex:1 1 300px}
+    .card{background:linear-gradient(180deg,#121a2f,#0f182d);border:1px solid #1f2a44;border-radius:16px;padding:16px;box-shadow:0 2px 24px rgba(0,0,0,.25)}
+    .muted{color:var(--muted)}
+    button,.btn{background:linear-gradient(180deg,#1a2442,#152039);border:1px solid #2a3a62;color:var(--text);padding:10px 14px;border-radius:12px;cursor:pointer}
+    button:hover{border-color:#4cc9f0}
+    input,select,textarea{width:100%;background:#0e1530;border:1px solid #243357;color:var(--text);padding:10px;border-radius:12px}
+    .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+    .tab{padding:10px 12px;border-radius:999px;background:#111a31;border:1px solid #25345a;cursor:pointer;color:#b7c6e3}
+    .tab.active{background:linear-gradient(180deg,#182346,#141f3b);color:#fff;border-color:#4cc9f0}
+    .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#111a31;border:1px solid #25345a;color:#9fb2d6}
+    .list{display:flex;flex-direction:column;gap:10px}
+    .item{display:flex;align-items:center;gap:10px;background:#0f1730;border:1px solid #25345a;padding:10px;border-radius:12px}
+    .item input[type=checkbox]{transform:scale(1.2)}
+    .tag{padding:2px 8px;border-radius:999px;border:1px solid #334770;color:#c9defb;background:#0b142c;font-size:12px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+    .footer{margin:24px 0;color:#7f93bb;font-size:12px;text-align:center}
+    .inline{display:inline-flex;gap:8px;align-items:center}
+    .hidden{display:none !important}
+    .divider{height:1px;background:#22345f;margin:12px 0;border:0}
+    .avatar{width:24px;height:24px;border-radius:50%;display:inline-block}
+    .color{appearance:none;width:44px;height:32px;border-radius:8px;border:1px solid #25406f;background:transparent}
+    .kbd{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-size:12px;background:#0b142c;border:1px solid #2b426e;padding:2px 6px;border-radius:6px}
+    .calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+    .cal-cell{background:#0f1730;border:1px solid #25345a;border-radius:10px;padding:8px;min-height:80px}
+    .cal-cell .d{font-size:12px;color:#93abd4}
+    .cal-evt{margin-top:6px;font-size:12px;padding:4px 6px;border:1px solid #34568a;border-radius:8px;background:#0b142c}
+    .toast{position:fixed;bottom:16px;right:16px;background:#0f1730;border:1px solid #27406b;padding:10px 14px;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.35)}
+    .net{font-size:12px;padding:4px 8px;border-radius:999px;border:1px solid #2b3e67}
+    .net.online{background:#0f2a2a;border-color:#1f5f5f;color:#b6fff2}
+    .net.offline{background:#2a0f0f;border-color:#5f1f1f;color:#ffd6d6}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;">
+      <div class="brand">
+        <img class="logo" alt="logo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Ccircle cx='64' cy='64' r='60' fill='%230bb'/%3E%3Cpath d='M32 72c8-20 56-20 64 0-4 20-60 20-64 0z' fill='%23fff'/%3E%3Ccircle cx='48' cy='52' r='8' fill='%23fff'/%3E%3Ccircle cx='80' cy='52' r='8' fill='%23fff'/%3E%3C/svg%3E" />
+        <h1>FamilyHub • Napi Kör</h1>
+      </div>
+      <div class="inline">
+        <span class="pill"><span id="familyNameLabel">Család</span></span>
+        <span id="netBadge" class="net">ellenőrzés…</span>
+        <button id="installBtn" class="btn">Telepítés (PWA)</button>
+        <button id="notifBtn" class="btn">Értesítések bekapcsolása</button>
+        <button id="exportBtn" class="btn">Export / Mentés</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="card">
+      <div class="tabs" id="tabs"></div>
+      <div id="view-dashboard" class="view"></div>
+      <div id="view-calendar" class="view hidden"></div>
+      <div id="view-tasks" class="view hidden"></div>
+      <div id="view-shopping" class="view hidden"></div>
+      <div id="view-wall" class="view hidden"></div>
+      <div id="view-settings" class="view hidden"></div>
+    </div>
+    <div class="footer">Offline-first PWA • ICS import/export • Opcionális Google Calendar szinkron előkészítve • Helyi értesítések + alap push előkészítés • <span class="muted">Hibrid offline: App Shell + Offline fallback</span></div>
+  </main>
+
+  <template id="tpl-dashboard">
+    <div class="row">
+      <div class="col">
+        <div class="card">
+          <h3 style="margin:0 0 8px">Mai teendők</h3>
+          <div id="dash-tasks"></div>
+          <div class="divider"></div>
+          <div class="inline" style="gap:8px">
+            <input id="newTaskTitle" placeholder="Új teendő..." />
+            <button id="addTaskBtn">Hozzáadás</button>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card">
+          <h3 style="margin:0 0 8px">Közelgő események</h3>
+          <div id="dash-events"></div>
+          <div class="divider"></div>
+          <div class="grid">
+            <div>
+              <label>Cím</label>
+              <input id="evtTitle" placeholder="Pl. Orvos, szülői, edzés" />
+            </div>
+            <div>
+              <label>Dátum</label>
+              <input id="evtDate" type="date" />
+            </div>
+            <div>
+              <label>Kezdés</label>
+              <input id="evtStart" type="time" />
+            </div>
+            <div>
+              <label>Vége</label>
+              <input id="evtEnd" type="time" />
+            </div>
+            <div>
+              <label>Megjegyzés</label>
+              <input id="evtNote" placeholder="Opció" />
+            </div>
+            <div>
+              <label>&nbsp;</label>
+              <button id="addEvtBtn">Esemény hozzáadása</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <template id="tpl-calendar">
+    <div class="inline" style="justify-content:space-between;width:100%">
+      <div class="inline">
+        <button id="prevMonth">◀</button>
+        <div class="pill" id="monthLabel">2025-10</div>
+        <button id="nextMonth">▶</button>
+      </div>
+      <div class="inline">
+        <button id="icsExport">ICS export</button>
+        <label class="btn" for="icsImportFile">ICS import</label>
+        <input id="icsImportFile" type="file" accept=".ics,text/calendar" class="hidden" />
+        <button id="gcalSync" title="Google Calendar szinkron (opcionális)">Google szinkron (beta)</button>
+      </div>
+    </div>
+    <div class="calendar" id="calGrid"></div>
+  </template>
+
+  <template id="tpl-tasks">
+    <div class="inline" style="justify-content:space-between;width:100%">
+      <div class="pill">Összes teendő</div>
+      <div class="inline">
+        <select id="taskFilter">
+          <option value="all">Mind</option>
+          <option value="open">Nyitott</option>
+          <option value="done">Kész</option>
+        </select>
+        <button id="clearDone">Kész elemek törlése</button>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="inline" style="gap:8px;margin-bottom:8px">
+      <input id="taskTitle" placeholder="Teendő címe" />
+      <select id="taskAssignee"></select>
+      <button id="taskAdd">Hozzáadás</button>
+    </div>
+    <div id="taskList" class="list"></div>
+  </template>
+
+  <template id="tpl-shopping">
+    <div class="inline" style="gap:8px;margin-bottom:8px">
+      <input id="shopTitle" placeholder="Tétel (pl. tej)" />
+      <input id="shopQty" placeholder="Mennyiség (pl. 2)" style="max-width:120px" />
+      <select id="shopCat">
+        <option>Élelmiszer</option>
+        <option>Háztartás</option>
+        <option>Gyerek</option>
+        <option>Egyéb</option>
+      </select>
+      <button id="shopAdd">Hozzáadás</button>
+      <button id="shopClearBought">Megvett törlése</button>
+    </div>
+    <div id="shopList" class="list"></div>
+  </template>
+
+  <template id="tpl-wall">
+    <div class="inline" style="gap:8px;margin-bottom:8px">
+      <input id="wallMsg" placeholder="Üzenj a családnak..." />
+      <button id="wallSend">Küldés</button>
+    </div>
+    <div id="wallFeed" class="list"></div>
+  </template>
+
+  <template id="tpl-settings">
+    <div class="grid">
+      <div class="card">
+        <h3>Család beállítások</h3>
+        <label>Család neve</label>
+        <input id="familyName" placeholder="Pl. Kovács család" />
+        <div class="divider"></div>
+        <h4>Tagok</h4>
+        <div id="members"></div>
+        <div class="inline" style="gap:8px;margin-top:8px">
+          <input id="memberName" placeholder="Új családtag neve" />
+          <input id="memberEmoji" placeholder="Emoji (pl. 😀)" style="max-width:120px" />
+          <input id="memberColor" type="color" class="color" value="#4cc9f0"/>
+          <button id="addMember">Hozzáadás</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Szinkron & értesítések</h3>
+        <p class="muted">Google Calendar szinkron (beta):
+          <br/><span class="kbd">Bejelentkezés → naptár kiválasztás → egyirányú import</span>
+        </p>
+        <button id="btnGoogleSignIn">Google bejelentkezés (demo)</button>
+        <button id="btnGoogleImport">Google naptár import (demo)</button>
+        <div class="divider"></div>
+        <p class="muted">Web Push előkészítés (szerver szükséges VAPID kulccsal). Helyi értesítések működnek.</p>
+        <button id="btnTestNotify">Teszt értesítés</button>
+        <div class="divider"></div>
+        <h4>Diagnosztika</h4>
+        <div class="inline" style="gap:8px;flex-wrap:wrap">
+          <button id="btnTestSW">Service Worker teszt</button>
+          <button id="btnSelfTestICS">ICS körteszt</button>
+          <button id="btnOpenOfflineTest">Offline fallback teszt</button>
+        </div>
+        <small class="muted">Az offline teszt egy véletlen útvonalat nyit meg; ha offline vagy és az útvonal nincs cache-ben, a SW az offline-oldalt mutatja.</small>
+      </div>
+    </div>
+  </template>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script>
+  /* ==========================
+     FamilyHub • Napi Kör — Core
+     Offline-first, local-first, ICS, demo Google sync hooks, local notifications
+     Hibrid offline: app shell + külön offline fallback oldal
+     ========================== */
+
+  const App = (() => {
+    const state = {
+      family: { id: 'family-001', name: 'Család', members: [
+        { id: 'm1', name: 'Anya', emoji: '👩', color: '#ff5d6c'},
+        { id: 'm2', name: 'Apa', emoji: '👨', color: '#4cc9f0'}
+      ]},
+      tasks: [],
+      shopping: [],
+      wall: [],
+      events: [],
+      monthOffset: 0,
+    };
+
+    const save = () => localStorage.setItem('familyhub.data', JSON.stringify(state));
+    const load = () => {
+      const raw = localStorage.getItem('familyhub.data');
+      if(raw){
+        try{ const obj = JSON.parse(raw); Object.assign(state, obj);}catch(e){console.warn('Load failed', e)}
+      }
+    };
+
+    const id = (pfx='id') => pfx + '-' + Math.random().toString(36).slice(2,9);
+
+    // UI helpers
+    const $ = sel => document.querySelector(sel);
+    const el = (tag, attrs={}, children=[]) => {
+      const n = document.createElement(tag);
+      Object.entries(attrs).forEach(([k,v]) => {
+        if(k==='class') n.className=v; else if(k==='html') n.innerHTML=v; else if(k.startsWith('on')) n.addEventListener(k.slice(2), v); else n.setAttribute(k,v);
+      });
+      children.forEach(c => n.append(c));
+      return n;
+    };
+    const toast = (msg) => {
+      const t = $('#toast'); t.textContent = msg; t.classList.remove('hidden');
+      setTimeout(()=> t.classList.add('hidden'), 2400);
+    };
+
+    // Network badge
+    function updateNet(){
+      const b=$('#netBadge');
+      if(navigator.onLine){ b.textContent='online'; b.classList.add('online'); b.classList.remove('offline'); }
+      else { b.textContent='offline'; b.classList.add('offline'); b.classList.remove('online'); }
+    }
+    window.addEventListener('online', updateNet);
+    window.addEventListener('offline', updateNet);
+
+    // Notifications
+    async function ensureNotifications(){
+      if(!('Notification' in window)) { toast('Nincs értesítés támogatás.'); return false; }
+      if(Notification.permission === 'granted') return true;
+      const perm = await Notification.requestPermission();
+      return perm === 'granted';
+    }
+    function notifyLocal(title, body){
+      if(Notification.permission==='granted') new Notification(title, { body });
+      // Also show in-app toast
+      toast(body);
+      // Service worker showNotification if available
+      if(navigator.serviceWorker?.controller){
+        navigator.serviceWorker.controller.postMessage({type:'notify', title, body});
+      }
+    }
+
+    // Tabs
+    const tabs = [
+      { id:'dashboard', name:'Irányítópult'},
+      { id:'calendar', name:'Naptár'},
+      { id:'tasks', name:'Teendők'},
+      { id:'shopping', name:'Bevásárló'},
+      { id:'wall', name:'Üzenőfal'},
+      { id:'settings', name:'Beállítások'},
+    ];
+
+    function renderTabs(active='dashboard'){
+      const wrap=$('#tabs'); wrap.innerHTML='';
+      tabs.forEach(t=>{
+        const b=el('button', {class:'tab'+(t.id===active?' active':''), onclick:()=>switchView(t.id)}, [t.name]);
+        wrap.append(b);
+      });
+    }
+
+    function switchView(view){
+      document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));
+      $('#view-'+view).classList.remove('hidden');
+      renderTabs(view);
+      const map={dashboard:renderDashboard, calendar:renderCalendar, tasks:renderTasks, shopping:renderShopping, wall:renderWall, settings:renderSettings};
+      map[view]?.();
+    }
+
+    // DASHBOARD
+    function renderDashboard(){
+      const root=$('#view-dashboard'); root.innerHTML = $('#tpl-dashboard').innerHTML;
+      // tasks today (open)
+      const openTasks = state.tasks.filter(t=>!t.done).slice(0,5);
+      const list = el('div', {class:'list'});
+      openTasks.forEach(t=>{
+        const it = el('div', {class:'item'});
+        const chk = el('input', {type:'checkbox', onchange:()=>{t.done=true; save(); renderDashboard(); notifyLocal('Teendő kész', t.title);}});
+        const meta = el('div', {}, [
+          el('div', {html: `<strong>${t.title}</strong>`}),
+          el('div', {class:'muted', html: `${memberPill(t.assignee)} • ${new Date(t.created).toLocaleString()}`})
+        ]);
+        it.append(chk, meta); list.append(it);
+      });
+      $('#dash-tasks').replaceWith(list);
+
+      // upcoming events (next 7 days)
+      const now = new Date();
+      const in7 = new Date(now.getTime()+7*86400000);
+      const upcoming = state.events.filter(e=> new Date(e.start) <= in7 && new Date(e.end||e.start) >= now)
+        .sort((a,b)=> new Date(a.start)-new Date(b.start)).slice(0,5);
+      const elv = el('div', {class:'list'});
+      upcoming.forEach(e=>{
+        const it = el('div', {class:'item'});
+        it.append(el('div', {class:'tag', html: new Date(e.start).toLocaleString()}), el('div', {html:`<strong>${e.title}</strong> <span class="muted">${e.note? '• '+e.note:''}</span>`}));
+        elv.append(it);
+      });
+      $('#dash-events').replaceWith(elv);
+
+      $('#addTaskBtn').onclick = () => {
+        const val=$('#newTaskTitle').value.trim(); if(!val) return;
+        const assignee = state.family.members[0]?.id;
+        state.tasks.unshift({ id:id('t'), title:val, assignee, done:false, created:Date.now() });
+        save(); renderDashboard(); notifyLocal('Új teendő', val);
+        $('#newTaskTitle').value='';
+      };
+      $('#addEvtBtn').onclick = () => {
+        const title=$('#evtTitle').value.trim();
+        const date=$('#evtDate').value; const s=$('#evtStart').value; const e=$('#evtEnd').value; const note=$('#evtNote').value.trim();
+        if(!title || !date) return toast('Cím és dátum kötelező');
+        const start = new Date(`${date}T${s||'09:00'}:00`);
+        const end = new Date(`${date}T${e||s||'10:00'}:00`);
+        state.events.push({ id:id('e'), title, start, end, note });
+        save(); renderDashboard(); notifyLocal('Új esemény', title + ' • ' + start.toLocaleString());
+        $('#evtTitle').value=''; $('#evtNote').value='';
+      };
+    }
+
+    // CALENDAR
+    function monthStart(offset){ const d=new Date(); d.setDate(1); d.setMonth(d.getMonth()+offset); return d; }
+    function daysInMonth(d){ const x=new Date(d.getFullYear(), d.getMonth()+1, 0); return x.getDate(); }
+
+    function renderCalendar(){
+      const root=$('#view-calendar'); root.innerHTML = $('#tpl-calendar').innerHTML;
+      const base = monthStart(state.monthOffset);
+      const y=base.getFullYear(), m=base.getMonth();
+      $('#monthLabel').textContent = base.toLocaleString('hu-HU', { month:'long', year:'numeric'});
+      const grid=$('#calGrid'); grid.innerHTML='';
+      const firstDow=(new Date(y,m,1).getDay()||7)-1; // Monday=0
+      for(let i=0;i<firstDow;i++) grid.append(el('div', {class:'cal-cell muted'}));
+      const days=daysInMonth(base);
+      for(let d=1; d<=days; d++){
+        const cell = el('div', {class:'cal-cell'});
+        const date = new Date(y,m,d);
+        cell.append(el('div', {class:'d', html: date.toLocaleDateString('hu-HU', {weekday:'short'})+' • '+d}));
+        const todays = state.events.filter(e=> new Date(e.start).toDateString()===date.toDateString());
+        todays.forEach(ev=>{
+          const evn = el('div', {class:'cal-evt', html:`<strong>${ev.title}</strong><br/><span class="muted">${new Date(ev.start).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}${ev.end? '–'+new Date(ev.end).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}):''}</span>`});
+          cell.append(evn);
+        });
+        grid.append(cell);
+      }
+      $('#prevMonth').onclick=()=>{state.monthOffset--; renderCalendar();};
+      $('#nextMonth').onclick=()=>{state.monthOffset++; renderCalendar();};
+      $('#icsExport').onclick=exportICS;
+      $('#icsImportFile').addEventListener('change', importICS);
+      $('#gcalSync').onclick=googleImportDemo;
+    }
+
+    // ICS import/export (very simple)
+    function exportICS(){
+      const lines=[
+        'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//FamilyHub//HU//',
+      ];
+      state.events.forEach(e=>{
+        lines.push('BEGIN:VEVENT');
+        lines.push('UID:'+e.id+'@familyhub');
+        const dt = (d)=> new Date(d).toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z/,'Z');
+        lines.push('DTSTART:'+dt(e.start));
+        if(e.end) lines.push('DTEND:'+dt(e.end));
+        lines.push('SUMMARY:'+escapeICS(e.title));
+        if(e.note) lines.push('DESCRIPTION:'+escapeICS(e.note));
+        lines.push('END:VEVENT');
+      });
+      lines.push('END:VCALENDAR');
+      const blob=new Blob([lines.join('\n')],{type:'text/calendar'});
+      const a=el('a',{href:URL.createObjectURL(blob),download:'familyhub.ics'}); a.click();
+    }
+    function escapeICS(s){ return String(s).replace(/\\/g,'\\\\').replace(/\n/g,'\\n').replace(/,/g,'\\,').replace(/;/g,'\\;'); }
+
+    async function importICS(ev){
+      const file=ev.target.files[0]; if(!file) return;
+      const text=await file.text();
+      const items=[]; let cur=null;
+      text.split(/\r?\n/).forEach(line=>{
+        if(line==='BEGIN:VEVENT'){ cur={}; }
+        else if(line==='END:VEVENT'){ if(cur?.title && cur?.start){ items.push(cur);} cur=null; }
+        else if(cur){
+          if(line.startsWith('SUMMARY:')) cur.title=unESC(line.slice(8));
+          else if(line.startsWith('DTSTART:')) cur.start=icsToDate(line.slice(8));
+          else if(line.startsWith('DTEND:')) cur.end=icsToDate(line.slice(6));
+          else if(line.startsWith('DESCRIPTION:')) cur.note=unESC(line.slice(12));
+        }
+      });
+      state.events.push(...items.map(e=>({id:id('e'), ...e})));
+      save(); renderCalendar(); notifyLocal('ICS import kész', `${items.length} esemény hozzáadva`);
+      ev.target.value='';
+      function unESC(s){return s.replace(/\\n/g,'\n').replace(/\\,/g,',').replace(/\\;/g,';').replace(/\\\\/g,'\\');}
+      function icsToDate(s){
+        // Expect UTC Zulu like 20250130T090000Z; fallback to local parse
+        const m=/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/.exec(s);
+        if(m){ return new Date(Date.UTC(+m[1],+m[2]-1,+m[3],+m[4],+m[5],+m[6])); }
+        return new Date(s);
+      }
+    }
+
+    // TASKS
+    function memberPill(id){
+      const m = state.family.members.find(x=>x.id===id); if(!m) return '<span class="tag">Ismeretlen</span>';
+      return `<span class="tag" style="border-color:${m.color};">${m.emoji||'👤'} ${m.name}</span>`;
+    }
+
+    function renderTasks(){
+      const root=$('#view-tasks'); root.innerHTML=$('#tpl-tasks').innerHTML;
+      // populate assignee select
+      const sel=$('#taskAssignee'); sel.innerHTML='';
+      state.family.members.forEach(m=> sel.append(el('option',{value:m.id},[m.name])));
+      const draw=()=>{
+        const filter=$('#taskFilter').value;
+        const wrap=$('#taskList'); wrap.innerHTML='';
+        state.tasks.filter(t=> filter==='all' || (filter==='open'&&!t.done) || (filter==='done'&&t.done)).forEach(t=>{
+          const it=el('div',{class:'item'});
+          const chk=el('input',{type:'checkbox'}); chk.checked=t.done; chk.onchange=()=>{t.done=chk.checked;save();draw();};
+          const meta=el('div',{},[
+            el('div',{html:`<strong>${t.title}</strong> ${memberPill(t.assignee)}`}),
+            el('div',{class:'muted',html:new Date(t.created).toLocaleString()})
+          ]);
+          const del=el('button',{onclick:()=>{state.tasks=state.tasks.filter(x=>x.id!==t.id);save();draw();}},['Törlés']);
+          it.append(chk, meta, del); wrap.append(it);
+        });
+      };
+      draw();
+      $('#taskAdd').onclick=()=>{
+        const title=$('#taskTitle').value.trim(); if(!title) return;
+        const assignee=$('#taskAssignee').value;
+        state.tasks.unshift({id:id('t'), title, assignee, done:false, created:Date.now()});
+        save(); draw(); notifyLocal('Új teendő', title);
+        $('#taskTitle').value='';
+      };
+      $('#taskFilter').onchange=draw;
+      $('#clearDone').onclick=()=>{ state.tasks=state.tasks.filter(t=>!t.done); save(); draw(); };
+    }
+
+    // SHOPPING
+    function renderShopping(){
+      const root=$('#view-shopping'); root.innerHTML=$('#tpl-shopping').innerHTML;
+      const draw=()=>{
+        const wrap=$('#shopList'); wrap.innerHTML='';
+        state.shopping.forEach(itm=>{
+          const it=el('div',{class:'item'});
+          const chk=el('input',{type:'checkbox'}); chk.checked=!!itm.bought; chk.onchange=()=>{itm.bought=chk.checked; save(); draw();};
+          const meta=el('div',{},[
+            el('div',{html:`<strong>${itm.title}</strong> <span class="muted">${itm.qty||''} ${itm.cat? '• '+itm.cat:''}</span>`}),
+            el('div',{class:'muted',html:`${memberPill(itm.by)} • ${new Date(itm.created).toLocaleString()}`})
+          ]);
+          const del=el('button',{onclick:()=>{state.shopping=state.shopping.filter(x=>x.id!==itm.id);save();draw();}},['Törlés']);
+          it.append(chk, meta, del); wrap.append(it);
+        });
+      };
+      draw();
+      $('#shopAdd').onclick=()=>{
+        const title=$('#shopTitle').value.trim(); if(!title) return;
+        const qty=$('#shopQty').value.trim(); const cat=$('#shopCat').value;
+        const by=state.family.members[0]?.id;
+        state.shopping.unshift({id:id('s'), title, qty, cat, by, created:Date.now()});
+        save(); draw(); notifyLocal('Bevásárlólista', `${title}${qty?' × '+qty:''}`);
+        $('#shopTitle').value=''; $('#shopQty').value='';
+      };
+      $('#shopClearBought').onclick=()=>{ state.shopping=state.shopping.filter(i=>!i.bought); save(); draw(); };
+    }
+
+    // WALL
+    function renderWall(){
+      const root=$('#view-wall'); root.innerHTML=$('#tpl-wall').innerHTML;
+      const draw=()=>{
+        const wrap=$('#wallFeed'); wrap.innerHTML='';
+        state.wall.slice(0,100).forEach(w=>{
+          const it=el('div',{class:'item'});
+          it.append(el('div',{class:'avatar', style:`background:${(state.family.members.find(m=>m.id===w.by)?.color)||'#333'}`}),
+                    el('div',{},[
+                      el('div',{html:`<strong>${state.family.members.find(m=>m.id===w.by)?.name||'Ismeretlen'}</strong> <span class='muted'>${new Date(w.at).toLocaleString()}</span>`}),
+                      el('div',{html:w.text})
+                    ]));
+          wrap.append(it);
+        });
+      };
+      draw();
+      $('#wallSend').onclick=()=>{
+        const text=$('#wallMsg').value.trim(); if(!text) return;
+        const by=state.family.members[0]?.id;
+        state.wall.unshift({id:id('w'), text, by, at:Date.now()});
+        save(); draw(); notifyLocal('Új üzenet', text);
+        $('#wallMsg').value='';
+      };
+    }
+
+    // SETTINGS
+    function renderSettings(){
+      const root=$('#view-settings'); root.innerHTML=$('#tpl-settings').innerHTML;
+      $('#familyName').value = state.family.name||'';
+      $('#familyName').oninput=(e)=>{ state.family.name=e.target.value; $('#familyNameLabel').textContent=state.family.name||'Család'; save(); };
+      const list=$('#members'); list.innerHTML='';
+      state.family.members.forEach(m=>{
+        const row=el('div',{class:'item'},[
+          el('span',{class:'avatar', style:`background:${m.color}`}),
+          el('div',{},[ el('div',{html:`<strong>${m.name}</strong> <span class='muted'>${m.emoji||''}</span>`}) ]),
+          el('button',{onclick:()=>{ state.tasks.forEach(t=>{ if(t.assignee===m.id) t.assignee = state.family.members[0]?.id; }); state.family.members=state.family.members.filter(x=>x.id!==m.id); save(); renderSettings(); }},['Eltávolítás'])
+        ]);
+        list.append(row);
+      });
+      $('#addMember').onclick=()=>{
+        const name=$('#memberName').value.trim(); if(!name) return;
+        const emoji=$('#memberEmoji').value.trim(); const color=$('#memberColor').value;
+        state.family.members.push({id:id('m'), name, emoji, color}); save(); renderSettings();
+        $('#memberName').value=''; $('#memberEmoji').value='';
+      };
+      $('#btnGoogleSignIn').onclick=()=>{ toast('Demo: itt jelenne meg a Google bejelentkezés (OAuth)'); };
+      $('#btnGoogleImport').onclick=googleImportDemo;
+      $('#btnTestNotify').onclick=()=>{ notifyLocal('FamilyHub', 'Ez egy teszt értesítés.'); };
+      // Diagnostics
+      $('#btnTestSW').onclick=testSW;
+      $('#btnSelfTestICS').onclick=selfTestICS;
+      $('#btnOpenOfflineTest').onclick=()=>{
+        const path='/offline-test-'+Math.random().toString(36).slice(2,6);
+        window.open(path, '_blank');
+      };
+    }
+
+    // DEMO Google Calendar import (helykitöltő)
+    async function googleImportDemo(){
+      toast('Demo: Google Calendar import helykitöltő. ICS export/import működik.');
+      // Ide jönne: OAuth 2 implicit/PKCE + Calendar API list events → state.events push → save → render
+    }
+
+    // EXPORT / IMPORT (mentés)
+    function exportAll(){
+      const blob=new Blob([JSON.stringify(state,null,2)], {type:'application/json'});
+      const a=el('a',{href:URL.createObjectURL(blob), download: `FamilyHub_backup_${new Date().toISOString().slice(0,10)}.json`}); a.click();
+    }
+
+    // INSTALL (PWA) + NET BADGE INIT
+    let deferredPrompt=null;
+    window.addEventListener('beforeinstallprompt', (e)=>{ e.preventDefault(); deferredPrompt=e; $('#installBtn').disabled=false; });
+
+    function bindHeader(){
+      $('#installBtn').onclick=async()=>{ if(!deferredPrompt){ toast('Már telepítve lehet vagy még nem elérhető.'); return;} deferredPrompt.prompt(); };
+      $('#notifBtn').onclick=ensureNotifications;
+      $('#exportBtn').onclick=exportAll;
+      $('#familyNameLabel').textContent = state.family.name || 'Család';
+      updateNet();
+    }
+
+    function init(){
+      load();
+      bindHeader();
+      renderTabs('dashboard');
+      switchView('dashboard');
+      registerPWA();
+    }
+
+    // Service Worker & Manifest via Blob (single-file trick) + Offline fallback
+    function registerPWA(){
+      const manifest = {
+        name: 'FamilyHub • Napi Kör',
+        short_name: 'FamilyHub',
+        start_url: '/',
+        display: 'standalone',
+        background_color: '#0b1020',
+        theme_color: '#0b1020',
+        icons: [192,512].map(sz=>({
+          src: svgIconDataURI(), sizes: `${sz}x${sz}`, type: 'image/png', purpose:'any maskable'
+        }))
+      };
+      const mURL=URL.createObjectURL(new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'}));
+      const link=document.createElement('link'); link.rel='manifest'; link.href=mURL; document.head.appendChild(link);
+
+      const offlineHTML = `<!doctype html><html lang="hu"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Offline • FamilyHub</title><style>body{margin:0;font-family:system-ui,Segoe UI,Roboto;background:#0b1020;color:#e6eefb;display:grid;place-items:center;height:100vh} .box{max-width:560px;padding:24px;border:1px solid #27406b;border-radius:16px;background:#0f1730;box-shadow:0 10px 40px rgba(0,0,0,.35)} h1{margin:0 0 8px} p{color:#9fb2d6} button{padding:10px 14px;border-radius:12px;border:1px solid #2a3a62;background:#152039;color:#fff;cursor:pointer} button:active{transform:translateY(1px)}</style></head><body><div class="box"><h1>Offline mód</h1><p>Úgy tűnik, nincs hálózati kapcsolat és ez az oldal még nincs a gyorsítótárban.</p><p>Próbáld meg újra, vagy menj a kezdőlapra (ha korábban megnyitottad, offline is elérhető lehet).</p><div style="display:flex;gap:8px;margin-top:12px"><button onclick="location.reload()">Próbáld újra</button><button onclick="location.href='/'">Kezdőlap</button></div></div></body></html>`;
+
+      const swCode = `
+const CACHE = 'fhub-v2';
+self.addEventListener('install',e=>{ self.skipWaiting(); e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['/'])) ); });
+self.addEventListener('activate',e=>{ self.clients.claim(); e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))))); });
+self.addEventListener('fetch',e=>{
+  const req=e.request;
+  const url=new URL(req.url);
+  // Navigation requests: hybrid strategy
+  if(req.mode==='navigate'){
+    e.respondWith((async()=>{
+      try{
+        const net=await fetch(req);
+        const copy=net.clone(); caches.open(CACHE).then(c=>c.put(req, copy));
+        return net;
+      }catch(err){
+        const cached=await caches.match(req);
+        if(cached) return cached;
+        return new Response(${JSON.stringify(offlineHTML)}, { headers: {'Content-Type':'text/html; charset=utf-8'} });
+      }
+    })());
+    return;
+  }
+  // Other requests: cache-first then network
+  e.respondWith(caches.match(req).then(r=> r || fetch(req).then(res=>{ const copy=res.clone(); caches.open(CACHE).then(c=>c.put(req, copy)); return res; }))); 
+});
+self.addEventListener('message', e=>{ if(e.data&&e.data.type==='notify'&&self.registration.showNotification){ self.registration.showNotification(e.data.title||'FamilyHub', { body: e.data.body||'' }); }});
+`;
+      const swURL=URL.createObjectURL(new Blob([swCode],{type:'text/javascript'}));
+      if('serviceWorker' in navigator){
+        try{
+          navigator.serviceWorker.register(swURL, { scope: '/' }).then(reg=>{
+            console.info('ServiceWorker reg OK, scope =', reg.scope);
+          }).catch(err=>{
+            console.error('ServiceWorker reg error', err);
+            toast('SW reg hiba: lásd konzol');
+          });
+        }catch(e){ console.error('SW reg failed', e); toast('SW reg exception'); }
+      }
+    }
+
+    function svgIconDataURI(){
+      const svg=`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><defs><linearGradient id='g' x1='0' x2='0' y1='0' y2='1'><stop offset='0%' stop-color='%234cc9f0'/><stop offset='100%' stop-color='%23b5179e'/></linearGradient></defs><rect rx='30' width='128' height='128' fill='url(%23g)'/><circle cx='43' cy='54' r='10' fill='white'/><circle cx='85' cy='54' r='10' fill='white'/><path d='M30 80c10-18 58-18 68 0-6 22-62 22-68 0z' fill='white'/></svg>`;
+      return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+    }
+
+    // ---- Diagnostics ----
+    async function testSW(){
+      if(!('serviceWorker' in navigator)) { toast('Nincs SW támogatás.'); return; }
+      try{
+        const reg = await navigator.serviceWorker.getRegistration('/');
+        console.log('SW getRegistration("/") →', reg);
+        if(reg){ toast('SW OK: '+(reg.scope||'/')); }
+        else { toast('SW nincs regisztrálva a / alatt'); }
+      }catch(e){ console.error(e); toast('SW teszt hiba'); }
+    }
+
+    function selfTestICS(){
+      // Minimal körteszt: létrehoz + export + visszaolvas parsingszinten
+      const tmpEvt={ id:id('e'), title:'[TESZT] ICS', start:new Date(), end:new Date(Date.now()+3600000), note:'diagnosztika' };
+      const backup=[...state.events];
+      state.events.push(tmpEvt);
+      const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//FamilyHub//HU//','BEGIN:VEVENT','UID:'+tmpEvt.id+'@familyhub'];
+      const dt=(d)=> new Date(d).toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z/,'Z');
+      lines.push('DTSTART:'+dt(tmpEvt.start)); lines.push('DTEND:'+dt(tmpEvt.end)); lines.push('SUMMARY:'+tmpEvt.title); lines.push('DESCRIPTION:'+tmpEvt.note); lines.push('END:VEVENT','END:VCALENDAR');
+      const text=lines.join('\n');
+      // parse vissza
+      let ok=text.includes('BEGIN:VEVENT') && text.includes('DTSTART:') && text.includes('SUMMARY:');
+      state.events=backup; // rollback
+      toast(ok? 'ICS ön-teszt: OK' : 'ICS ön-teszt: HIBA');
+    }
+
+    return { init };
+  })();
+
+  // Boot
+  document.addEventListener('DOMContentLoaded', App.init);
+  </script>
+</body>
+</html>
