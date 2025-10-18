@@ -222,8 +222,11 @@
           <button id="btnTestSW">Service Worker teszt</button>
           <button id="btnSelfTestICS">ICS körteszt</button>
           <button id="btnOpenOfflineTest">Offline fallback teszt</button>
+          <button id="btnUnregSW" class="btn">SW eltávolítás</button>
+          <button id="btnClearCaches" class="btn">Cache ürítés</button>
+          <button id="btnFactoryReset" class="btn" title="SW + cache + adatok törlése">Gyári visszaállítás</button>
         </div>
-        <small class="muted">Az offline teszt egy véletlen útvonalat nyit meg; ha offline vagy és az útvonal nincs cache-ben, a SW az offline-oldalt mutatja.</small>
+        <small class="muted">Ha a vászon (blob: URL) miatt nincs SW, futtasd localhoston vagy https alatt. A fenti gombok segítenek egy elrontott cache/SW állapotot helyrehozni.</small>
       </div>
     </div>
   </template>
@@ -235,6 +238,7 @@
      FamilyHub • Napi Kör — Core
      Offline-first, local-first, ICS, demo Google sync hooks, local notifications
      Hibrid offline: app shell + külön offline fallback oldal
+     + Helyreállító eszközök (SW unregister, cache clear, gyári reset)
      ========================== */
 
   const App = (() => {
@@ -258,7 +262,7 @@
       }
     };
 
-    const id = (pfx='id') => pfx + '-' + Math.random().toString(36).slice(2,9);
+    const id = (pfx='id') => pfx + Math.random().toString(36).slice(2,9);
 
     // UI helpers
     const $ = sel => document.querySelector(sel);
@@ -293,9 +297,7 @@
     }
     function notifyLocal(title, body){
       if(Notification.permission==='granted') new Notification(title, { body });
-      // Also show in-app toast
       toast(body);
-      // Service worker showNotification if available
       if(navigator.serviceWorker?.controller){
         navigator.serviceWorker.controller.postMessage({type:'notify', title, body});
       }
@@ -330,7 +332,6 @@
     // DASHBOARD
     function renderDashboard(){
       const root=$('#view-dashboard'); root.innerHTML = $('#tpl-dashboard').innerHTML;
-      // tasks today (open)
       const openTasks = state.tasks.filter(t=>!t.done).slice(0,5);
       const list = el('div', {class:'list'});
       openTasks.forEach(t=>{
@@ -344,7 +345,6 @@
       });
       $('#dash-tasks').replaceWith(list);
 
-      // upcoming events (next 7 days)
       const now = new Date();
       const in7 = new Date(now.getTime()+7*86400000);
       const upcoming = state.events.filter(e=> new Date(e.start) <= in7 && new Date(e.end||e.start) >= now)
@@ -447,7 +447,6 @@
       ev.target.value='';
       function unESC(s){return s.replace(/\\n/g,'\n').replace(/\\,/g,',').replace(/\\;/g,';').replace(/\\\\/g,'\\');}
       function icsToDate(s){
-        // Expect UTC Zulu like 20250130T090000Z; fallback to local parse
         const m=/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/.exec(s);
         if(m){ return new Date(Date.UTC(+m[1],+m[2]-1,+m[3],+m[4],+m[5],+m[6])); }
         return new Date(s);
@@ -462,7 +461,6 @@
 
     function renderTasks(){
       const root=$('#view-tasks'); root.innerHTML=$('#tpl-tasks').innerHTML;
-      // populate assignee select
       const sel=$('#taskAssignee'); sel.innerHTML='';
       state.family.members.forEach(m=> sel.append(el('option',{value:m.id},[m.name])));
       const draw=()=>{
@@ -567,20 +565,17 @@
       $('#btnGoogleSignIn').onclick=()=>{ toast('Demo: itt jelenne meg a Google bejelentkezés (OAuth)'); };
       $('#btnGoogleImport').onclick=googleImportDemo;
       $('#btnTestNotify').onclick=()=>{ notifyLocal('FamilyHub', 'Ez egy teszt értesítés.'); };
-      // Diagnostics
+      // Diagnostics & Recovery
       $('#btnTestSW').onclick=testSW;
       $('#btnSelfTestICS').onclick=selfTestICS;
-      $('#btnOpenOfflineTest').onclick=()=>{
-        const path='/offline-test-'+Math.random().toString(36).slice(2,6);
-        window.open(path, '_blank');
-      };
+      $('#btnOpenOfflineTest').onclick=()=>{ const path='/offline-test-'+Math.random().toString(36).slice(2,6); window.open(path, '_blank'); };
+      $('#btnUnregSW').onclick=unregisterAllSW;
+      $('#btnClearCaches').onclick=clearAllCaches;
+      $('#btnFactoryReset').onclick=async()=>{ await unregisterAllSW(); await clearAllCaches(); localStorage.removeItem('familyhub.data'); toast('Gyári visszaállítás kész. Frissítés…'); setTimeout(()=>location.reload(), 600); };
     }
 
     // DEMO Google Calendar import (helykitöltő)
-    async function googleImportDemo(){
-      toast('Demo: Google Calendar import helykitöltő. ICS export/import működik.');
-      // Ide jönne: OAuth 2 implicit/PKCE + Calendar API list events → state.events push → save → render
-    }
+    async function googleImportDemo(){ toast('Demo: Google Calendar import helykitöltő. ICS export/import működik.'); }
 
     // EXPORT / IMPORT (mentés)
     function exportAll(){
@@ -610,23 +605,18 @@
 
     // Service Worker & Manifest via Blob (single-file trick) + Offline fallback
     function registerPWA(){
-      // Detect environments where SW is not allowed (e.g., blob: sandbox preview)
-      if(location.protocol === 'blob:' || location.origin === 'null'){
-        console.warn('Service Worker nem engedélyezett ebben a környezetben (blob: URL).');
-        toast('Ebben a nézetben nincs SW (blob URL). Nyisd meg localhost/https alatt.');
-        return; // graceful skip
+      // Skip SW if not allowed (canvas blob sandbox, file://, etc.) or disabled by flag
+      const params = new URLSearchParams(location.search);
+      const noSW = params.get('nosw')==='1';
+      if(location.protocol==='blob:' || location.origin==='null' || noSW){
+        console.warn('SW skip. Reason:', {protocol: location.protocol, origin: location.origin, noSW});
+        if(noSW) toast('SW ideiglenesen kikapcsolva (?nosw=1)');
+        return;
       }
 
       const manifest = {
-        name: 'FamilyHub • Napi Kör',
-        short_name: 'FamilyHub',
-        start_url: '/',
-        display: 'standalone',
-        background_color: '#0b1020',
-        theme_color: '#0b1020',
-        icons: [192,512].map(sz=>({
-          src: svgIconDataURI(), sizes: `${sz}x${sz}`, type: 'image/png', purpose:'any maskable'
-        }))
+        name: 'FamilyHub • Napi Kör', short_name: 'FamilyHub', start_url: '/', display: 'standalone', background_color: '#0b1020', theme_color: '#0b1020',
+        icons: [192,512].map(sz=>({ src: svgIconDataURI(), sizes: `${sz}x${sz}`, type: 'image/png', purpose:'any maskable'}))
       };
       const mURL=URL.createObjectURL(new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'}));
       const link=document.createElement('link'); link.rel='manifest'; link.href=mURL; document.head.appendChild(link);
@@ -634,12 +624,11 @@
       const offlineHTML = `<!doctype html><html lang="hu"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Offline • FamilyHub</title><style>body{margin:0;font-family:system-ui,Segoe UI,Roboto;background:#0b1020;color:#e6eefb;display:grid;place-items:center;height:100vh} .box{max-width:560px;padding:24px;border:1px solid #27406b;border-radius:16px;background:#0f1730;box-shadow:0 10px 40px rgba(0,0,0,.35)} h1{margin:0 0 8px} p{color:#9fb2d6} button{padding:10px 14px;border-radius:12px;border:1px solid #2a3a62;background:#152039;color:#fff;cursor:pointer} button:active{transform:translateY(1px)}</style></head><body><div class=\"box\"><h1>Offline mód</h1><p>Úgy tűnik, nincs hálózati kapcsolat és ez az oldal még nincs a gyorsítótárban.</p><p>Próbáld meg újra, vagy menj a kezdőlapra (ha korábban megnyitottad, offline is elérhető lehet).</p><div style=\"display:flex;gap:8px;margin-top:12px\"><button onclick=\"location.reload()\">Próbáld újra</button><button onclick=\"location.href='/'\">Kezdőlap</button></div></div></body></html>`;
 
       const swCode = `
-const CACHE = 'fhub-v2';
+const CACHE = 'fhub-v3';
 self.addEventListener('install',e=>{ self.skipWaiting(); e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['/'])) ); });
 self.addEventListener('activate',e=>{ self.clients.claim(); e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))))); });
 self.addEventListener('fetch',e=>{
   const req=e.request;
-  const url=new URL(req.url);
   if(req.mode==='navigate'){
     e.respondWith((async()=>{
       try{ const net=await fetch(req); const copy=net.clone(); caches.open(CACHE).then(c=>c.put(req, copy)); return net; }
@@ -654,17 +643,12 @@ self.addEventListener('message', e=>{ if(e.data&&e.data.type==='notify'&&self.re
       const swURL=URL.createObjectURL(new Blob([swCode],{type:'text/javascript'}));
       if('serviceWorker' in navigator){
         try{
-          navigator.serviceWorker.register(swURL, { scope: '/' }).then(reg=>{
-            console.info('ServiceWorker reg OK, scope =', reg.scope);
-          }).catch(err=>{
-            console.error('ServiceWorker reg error', err);
-            toast('SW reg hiba: lásd konzol');
-          });
+          navigator.serviceWorker.register(swURL, { scope: '/' }).then(reg=>{ console.info('ServiceWorker reg OK, scope =', reg.scope); }).catch(err=>{ console.error('ServiceWorker reg error', err); toast('SW reg hiba: lásd konzol'); });
         }catch(e){ console.error('SW reg failed', e); toast('SW reg exception'); }
       }
     }
 
-    function svgIconDataURI()(){
+    function svgIconDataURI(){
       const svg=`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><defs><linearGradient id='g' x1='0' x2='0' y1='0' y2='1'><stop offset='0%' stop-color='%234cc9f0'/><stop offset='100%' stop-color='%23b5179e'/></linearGradient></defs><rect rx='30' width='128' height='128' fill='url(%23g)'/><circle cx='43' cy='54' r='10' fill='white'/><circle cx='85' cy='54' r='10' fill='white'/><path d='M30 80c10-18 58-18 68 0-6 22-62 22-68 0z' fill='white'/></svg>`;
       return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
     }
@@ -686,8 +670,24 @@ self.addEventListener('message', e=>{ if(e.data&&e.data.type==='notify'&&self.re
       }catch(e){ console.error(e); toast('SW teszt hiba'); }
     }
 
+    async function unregisterAllSW(){
+      if(!('serviceWorker' in navigator)) { toast('Nincs SW támogatás.'); return; }
+      try{
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r=>r.unregister()));
+        toast('SW(ek) eltávolítva.');
+      }catch(e){ console.error(e); toast('SW eltávolítás hiba'); }
+    }
+
+    async function clearAllCaches(){
+      try{
+        const keys=await caches.keys();
+        await Promise.all(keys.map(k=>caches.delete(k)));
+        toast('Cache(ek) ürítve.');
+      }catch(e){ console.error(e); toast('Cache ürítés hiba'); }
+    }
+
     function selfTestICS(){
-      // Minimal körteszt: létrehoz + export + visszaolvas parsingszinten
       const tmpEvt={ id:id('e'), title:'[TESZT] ICS', start:new Date(), end:new Date(Date.now()+3600000), note:'diagnosztika' };
       const backup=[...state.events];
       state.events.push(tmpEvt);
@@ -695,7 +695,6 @@ self.addEventListener('message', e=>{ if(e.data&&e.data.type==='notify'&&self.re
       const dt=(d)=> new Date(d).toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z/,'Z');
       lines.push('DTSTART:'+dt(tmpEvt.start)); lines.push('DTEND:'+dt(tmpEvt.end)); lines.push('SUMMARY:'+tmpEvt.title); lines.push('DESCRIPTION:'+tmpEvt.note); lines.push('END:VEVENT','END:VCALENDAR');
       const text=lines.join('\n');
-      // parse vissza
       let ok=text.includes('BEGIN:VEVENT') && text.includes('DTSTART:') && text.includes('SUMMARY:');
       state.events=backup; // rollback
       toast(ok? 'ICS ön-teszt: OK' : 'ICS ön-teszt: HIBA');
