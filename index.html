@@ -1,15 +1,227 @@
+```html
 <!doctype html>
 <html lang="hu">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>FamilyHub • Napi Kör — Családi PWA</title>
+  <meta name="description" content="Családi irányítópult + közös naptár, offline-first PWA, ICS import/export." />
   <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icons/icon.svg" />
   <meta name="theme-color" content="#0b1020" />
+  <style>
+    :root{--bg:#0b1020;--card:#121a2f;--muted:#8aa1c0;--text:#e6eefb;--accent:#4cc9f0}
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,#0b1020,#0e1530);color:var(--text)}
+    .container{max-width:1100px;margin:0 auto;padding:16px}
+    header{position:sticky;top:0;background:rgba(11,16,32,.8);backdrop-filter:blur(8px);border-bottom:1px solid #1f2a44;z-index:10}
+    .brand{display:flex;align-items:center;gap:10px}
+    .brand .logo{width:28px;height:28px}
+    .brand h1{font-size:18px;margin:0}
+    .row{display:flex;gap:16px;flex-wrap:wrap}
+    .col{flex:1 1 300px}
+    .card{background:linear-gradient(180deg,#121a2f,#0f182d);border:1px solid #1f2a44;border-radius:16px;padding:16px;box-shadow:0 2px 24px rgba(0,0,0,.25)}
+    .muted{color:var(--muted)}
+    button,.btn{background:linear-gradient(180deg,#1a2442,#152039);border:1px solid #2a3a62;color:var(--text);padding:10px 14px;border-radius:12px;cursor:pointer}
+    input,select{width:100%;background:#0e1530;border:1px solid #243357;color:var(--text);padding:10px;border-radius:12px}
+    .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+    .tab{padding:10px 12px;border-radius:999px;background:#111a31;border:1px solid #25345a;cursor:pointer;color:#b7c6e3}
+    .tab.active{background:linear-gradient(180deg,#182346,#141f3b);color:#fff;border-color:#4cc9f0}
+    .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#111a31;border:1px solid #25345a;color:#9fb2d6}
+    .list{display:flex;flex-direction:column;gap:10px}
+    .item{display:flex;align-items:center;gap:10px;background:#0f1730;border:1px solid #25345a;padding:10px;border-radius:12px}
+    .item input[type=checkbox]{transform:scale(1.2)}
+    .tag{padding:2px 8px;border-radius:999px;border:1px solid #334770;color:#c9defb;background:#0b142c;font-size:12px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+    .footer{margin:24px 0;color:#7f93bb;font-size:12px;text-align:center}
+    .inline{display:inline-flex;gap:8px;align-items:center}
+    .hidden{display:none!important}
+    .divider{height:1px;background:#22345f;margin:12px 0;border:0}
+    .avatar{width:24px;height:24px;border-radius:50%;display:inline-block}
+    .calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+    .cal-cell{background:#0f1730;border:1px solid #25345a;border-radius:10px;padding:8px;min-height:80px}
+    .cal-cell .d{font-size:12px;color:#93abd4}
+    .cal-evt{margin-top:6px;font-size:12px;padding:4px 6px;border:1px solid #34568a;border-radius:8px;background:#0b142c}
+    .toast{position:fixed;bottom:16px;right:16px;background:#0f1730;border:1px solid #27406b;padding:10px 14px;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.35)}
+    .net{font-size:12px;padding:4px 8px;border-radius:999px;border:1px solid #2b3e67}
+    .net.online{background:#0f2a2a;border-color:#1f5f5f;color:#b6fff2}
+    .net.offline{background:#2a0f0f;border-color:#5f1f1f;color:#ffd6d6}
+  </style>
 </head>
 <body>
-  <h1>FamilyHub működik ✅</h1>
-  <p>Ha ezt látod, az alap PWA betöltött.</p>
-  <script src="./app.js" defer></script>
+<header>
+  <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;">
+    <div class="brand">
+      <img class="logo" alt="logo" src="./icons/icon.svg" />
+      <h1>FamilyHub • Napi Kör</h1>
+    </div>
+    <div class="inline">
+      <span class="pill"><span id="familyNameLabel">Család</span></span>
+      <span id="netBadge" class="net">ellenőrzés…</span>
+      <button id="installBtn" class="btn">Telepítés (PWA)</button>
+      <button id="notifBtn" class="btn">Értesítések</button>
+      <button id="exportBtn" class="btn">Export / Mentés</button>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <div class="card">
+    <div class="tabs" id="tabs"></div>
+    <div id="view-dashboard" class="view"></div>
+    <div id="view-calendar" class="view hidden"></div>
+    <div id="view-tasks" class="view hidden"></div>
+    <div id="view-shopping" class="view hidden"></div>
+    <div id="view-wall" class="view hidden"></div>
+    <div id="view-settings" class="view hidden"></div>
+  </div>
+  <div class="footer">Offline-first PWA • ICS import/export • <span class="muted">GitHub Pages kompatibilis SW</span></div>
+</main>
+
+<!-- Templates -->
+<template id="tpl-dashboard">
+  <div class="row">
+    <div class="col">
+      <div class="card">
+        <h3 style="margin:0 0 8px">Mai teendők</h3>
+        <div id="dash-tasks"></div>
+        <div class="divider"></div>
+        <div class="inline" style="gap:8px">
+          <input id="newTaskTitle" placeholder="Új teendő..." />
+          <button id="addTaskBtn">Hozzáadás</button>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card">
+        <h3 style="margin:0 0 8px">Közelgő események</h3>
+        <div id="dash-events"></div>
+        <div class="divider"></div>
+        <div class="grid">
+          <div>
+            <label>Cím</label>
+            <input id="evtTitle" placeholder="Pl. Orvos, szülői, edzés" />
+          </div>
+          <div>
+            <label>Dátum</label>
+            <input id="evtDate" type="date" />
+          </div>
+          <div>
+            <label>Kezdés</label>
+            <input id="evtStart" type="time" />
+          </div>
+          <div>
+            <label>Vége</label>
+            <input id="evtEnd" type="time" />
+          </div>
+          <div>
+            <label>Megjegyzés</label>
+            <input id="evtNote" placeholder="Opció" />
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <button id="addEvtBtn">Esemény hozzáadása</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-calendar">
+  <div class="inline" style="justify-content:space-between;width:100%">
+    <div class="inline">
+      <button id="prevMonth">◀</button>
+      <div class="pill" id="monthLabel">2025-10</div>
+      <button id="nextMonth">▶</button>
+    </div>
+    <div class="inline">
+      <button id="icsExport">ICS export</button>
+      <label class="btn" for="icsImportFile">ICS import</label>
+      <input id="icsImportFile" type="file" accept=".ics,text/calendar" class="hidden" />
+    </div>
+  </div>
+  <div class="calendar" id="calGrid"></div>
+</template>
+
+<template id="tpl-tasks">
+  <div class="inline" style="justify-content:space-between;width:100%">
+    <div class="pill">Összes teendő</div>
+    <div class="inline">
+      <select id="taskFilter">
+        <option value="all">Mind</option>
+        <option value="open">Nyitott</option>
+        <option value="done">Kész</option>
+      </select>
+      <button id="clearDone">Kész elemek törlése</button>
+    </div>
+  </div>
+  <div class="divider"></div>
+  <div class="inline" style="gap:8px;margin-bottom:8px">
+    <input id="taskTitle" placeholder="Teendő címe" />
+    <select id="taskAssignee"></select>
+    <button id="taskAdd">Hozzáadás</button>
+  </div>
+  <div id="taskList" class="list"></div>
+</template>
+
+<template id="tpl-shopping">
+  <div class="inline" style="gap:8px;margin-bottom:8px">
+    <input id="shopTitle" placeholder="Tétel (pl. tej)" />
+    <input id="shopQty" placeholder="Mennyiség (pl. 2)" style="max-width:120px" />
+    <select id="shopCat">
+      <option>Élelmiszer</option>
+      <option>Háztartás</option>
+      <option>Gyerek</option>
+      <option>Egyéb</option>
+    </select>
+    <button id="shopAdd">Hozzáadás</button>
+    <button id="shopClearBought">Megvett törlése</button>
+  </div>
+  <div id="shopList" class="list"></div>
+</template>
+
+<template id="tpl-wall">
+  <div class="inline" style="gap:8px;margin-bottom:8px">
+    <input id="wallMsg" placeholder="Üzenj a családnak..." />
+    <button id="wallSend">Küldés</button>
+  </div>
+  <div id="wallFeed" class="list"></div>
+</template>
+
+<template id="tpl-settings">
+  <div class="grid">
+    <div class="card">
+      <h3>Család beállítások</h3>
+      <label>Család neve</label>
+      <input id="familyName" placeholder="Pl. Kovács család" />
+      <div class="divider"></div>
+      <h4>Tagok</h4>
+      <div id="members"></div>
+      <div class="inline" style="gap:8px;margin-top:8px">
+        <input id="memberName" placeholder="Új családtag neve" />
+        <input id="memberEmoji" placeholder="Emoji (pl. 😀)" style="max-width:120px" />
+        <input id="memberColor" type="color" value="#4cc9f0"/>
+        <button id="addMember">Hozzáadás</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Diagnosztika & PWA</h3>
+      <div class="inline" style="gap:8px;flex-wrap:wrap">
+        <button id="btnTestSW">Service Worker teszt</button>
+        <button id="btnSelfTestICS">ICS körteszt</button>
+        <button id="btnUnregSW" class="btn">SW eltávolítás</button>
+        <button id="btnClearCaches" class="btn">Cache ürítés</button>
+        <button id="btnFactoryReset" class="btn">Gyári visszaállítás</button>
+      </div>
+      <small class="muted">GitHub Pages-en a scope **/FamilyHUB/**. A `sw.js`-t a repo gyökerébe tedd.</small>
+    </div>
+  </div>
+</template>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="./app.js" defer></script>
 </body>
 </html>
