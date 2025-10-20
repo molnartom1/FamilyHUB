@@ -225,7 +225,6 @@
         </div>
         <div class="divider"></div>
         <h4>Diagnosztika</h4>
-        <p id="pushStatus" class="muted"></p>
         <div class="inline" style="gap:8px;flex-wrap:wrap">
           <button id="btnTestSW">Service Worker teszt</button>
           <button id="btnSelfTestICS">ICS körteszt</button>
@@ -272,42 +271,8 @@
     addEventListener('online', updateNet); addEventListener('offline', updateNet);
 
     // ---------- notifications ----------
-    const isSecure = () => (window.isSecureContext === true) || location.protocol === 'https:';
-    const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent);
-    const isStandalone = () => window.matchMedia && window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true;
-    const hasSW = () => 'serviceWorker' in navigator;
-    const hasPush = () => 'PushManager' in window;
-
-    function pushSupportReason(){
-      if(!isSecure()) return 'A push/értesítés csak biztonságos (HTTPS) környezetben működik.';
-      if(!hasSW()) return 'A böngésző nem enged service worker-t (Privát mód / régi böngésző?).';
-      if(!('Notification' in window)) return 'A böngésző nem támogatja a Notification API-t.';
-      if(isIOS() && !isStandalone()) return 'iOS-en csak telepített PWA-ként (Kezdőképernyőre hozzáadva) érhetők el a push értesítések.';
-      if(!hasPush()) return 'PushManager nem elérhető ebben a böngészőben.';
-      return 'OK';
-    }
-
-    async function ensureNotifications(){
-      const reason = pushSupportReason();
-      if(reason !== 'OK') { toast(reason); return false; }
-      try{
-        if(Notification.permission === 'granted') return true;
-        const perm = await Notification.requestPermission();
-        if(perm !== 'granted'){ toast('Értesítési engedély elutasítva.'); return false; }
-        return true;
-      }catch(e){ console.error(e); toast('Értesítési engedélykérés sikertelen.'); return false; }
-    }
+    async function ensureNotifications(){ if(!('Notification' in window)) { toast('Nincs értesítés támogatás.'); return false; } if(Notification.permission==='granted') return true; const perm=await Notification.requestPermission(); return perm==='granted'; }
     function notifyLocal(title, body){ try{ if(Notification.permission==='granted') new Notification(title, { body }); }catch{} toast(body); if(navigator.serviceWorker?.controller){ navigator.serviceWorker.controller.postMessage({type:'notify', title, body}); } }
-
-    function updatePushStatus(){
-      const el = document.getElementById('pushStatus'); if(!el) return;
-      const reason = pushSupportReason();
-      if(reason==='OK'){
-        el.innerHTML = '<span class="pill" style="border-color:#2bd576">Push támogatott ezen az eszközön.</span>';
-      } else {
-        el.innerHTML = `<span class="pill" style="border-color:#ff5d6c">${reason}</span>`;
-      }
-    }
 
     // ---------- tabs + views ----------
     const tabs = [
@@ -399,7 +364,11 @@
     function renderWall(){ const root=document.getElementById('view-wall'); if(!root) return; root.innerHTML=document.getElementById('tpl-wall').innerHTML; const draw=()=>{ const wrap=document.getElementById('wallFeed'); wrap.innerHTML=''; state.wall.slice(0,100).forEach(w=>{ const it=el('div',{class:'item'}); it.append(el('div',{class:'avatar', style:`background:${(state.family.members.find(m=>m.id===w.by)?.color)||'#333'}`}), el('div',{},[ el('div',{html:`<strong>${state.family.members.find(m=>m.id===w.by)?.name||'Ismeretlen'}</strong> <span class='muted'>${new Date(w.at).toLocaleString()}</span>`}), el('div',{html:w.text}) ])); wrap.append(it); }); }; draw(); document.getElementById('wallSend').onclick=()=>{ const text=document.getElementById('wallMsg').value.trim(); if(!text) return; const by=state.family.members[0]?.id; state.wall.unshift({id:id('w'), text, by, at:Date.now()}); save(); draw(); notifyLocal('Új üzenet', text); document.getElementById('wallMsg').value=''; } }
 
     // ---------- settings ----------
-    function renderSettings(){ const root=document.getElementById('view-settings'); if(!root) return; root.innerHTML=document.getElementById('tpl-settings').innerHTML; document.getElementById('familyName').value=state.family.name||''; document.getElementById('familyName').oninput=e=>{ state.family.name=e.target.value; document.getElementById('familyNameLabel').textContent=state.family.name||'Család'; save(); }; const list=document.getElementById('members'); list.innerHTML=''; state.family.members.forEach(m=>{ const row=el('div',{class:'item'},[ el('span',{class:'avatar', style:`background:${m.color}`}), el('div',{},[el('div',{html:`<strong>${m.name}</strong> <span class='muted'>${m.emoji||''}</span>`})]), el('button',{onclick:()=>{ state.tasks.forEach(t=>{ if(t.assignee===m.id) t.assignee=state.family.members[0]?.id; }); state.family.members=state.family.members.filter(x=>x.id!==m.id); save(); renderSettings(); }},['Eltávolítás']) ]); list.append(row); }); document.getElementById('addMember').onclick=()=>{ const name=document.getElementById('memberName').value.trim(); if(!name) return; const emoji=document.getElementById('memberEmoji').value.trim(); const color=document.getElementById('memberColor').value; state.family.members.push({id:id('m'), name, emoji, color}); save(); renderSettings(); document.getElementById('memberName').value=''; document.getElementById('memberEmoji').value=''; }; document.getElementById('btnGoogleSignIn').onclick=()=>toast('Demo: itt jelenne meg a Google bejelentkezés (OAuth)'); document.getElementById('btnGoogleImport').onclick=googleImportDemo; document.getElementById('btnTestNotify').onclick=()=>notifyLocal('FamilyHub','Ez egy teszt értesítés.'); // Web Push gombok document.getElementById('btnPushEnable').onclick=async()=>{ if(isIOS() && !isStandalone()){ toast('iOS-en add hozzá a Kezdőképernyőhöz, majd onnan nyisd meg az appot a push-hoz.'); } const ok = await ensureNotifications(); if(ok) pushEnable(); }; document.getElementById('btnPushDisable').onclick=pushDisable; document.getElementById('btnPushTest').onclick=pushTest; document.getElementById('btnTestSW').onclick=testSW; document.getElementById('btnSelfTestICS').onclick=selfTestICS; document.getElementById('btnOpenOfflineTest').onclick=()=>{ const path='/offline-test-'+Math.random().toString(36).slice(2,6); const isBlob=location.protocol==='blob:'; const isFile=location.protocol==='file:'; const isOpaque=location.origin==='null'; const BASE=(isBlob||isFile||isOpaque)? '/' : (location.pathname.endsWith('/')?location.pathname:location.pathname.replace(/[^/]+$/, '')); const full=BASE+path.replace(/^\//,''); window.open(full, '_blank'); }; document.getElementById('btnUnregSW').onclick=unregisterAllSW; document.getElementById('btnClearCaches').onclick=clearAllCaches; document.getElementById('btnFactoryReset').onclick=async()=>{ await unregisterAllSW(); await clearAllCaches(); localStorage.removeItem('familyhub.data'); toast('Gyári visszaállítás kész. Frissítés…'); setTimeout(()=>location.reload(),600); }; updatePushStatus(); } }
+    function renderSettings(){ const root=document.getElementById('view-settings'); if(!root) return; root.innerHTML=document.getElementById('tpl-settings').innerHTML; document.getElementById('familyName').value=state.family.name||''; document.getElementById('familyName').oninput=e=>{ state.family.name=e.target.value; document.getElementById('familyNameLabel').textContent=state.family.name||'Család'; save(); }; const list=document.getElementById('members'); list.innerHTML=''; state.family.members.forEach(m=>{ const row=el('div',{class:'item'},[ el('span',{class:'avatar', style:`background:${m.color}`}), el('div',{},[el('div',{html:`<strong>${m.name}</strong> <span class='muted'>${m.emoji||''}</span>`})]), el('button',{onclick:()=>{ state.tasks.forEach(t=>{ if(t.assignee===m.id) t.assignee=state.family.members[0]?.id; }); state.family.members=state.family.members.filter(x=>x.id!==m.id); save(); renderSettings(); }},['Eltávolítás']) ]); list.append(row); }); document.getElementById('addMember').onclick=()=>{ const name=document.getElementById('memberName').value.trim(); if(!name) return; const emoji=document.getElementById('memberEmoji').value.trim(); const color=document.getElementById('memberColor').value; state.family.members.push({id:id('m'), name, emoji, color}); save(); renderSettings(); document.getElementById('memberName').value=''; document.getElementById('memberEmoji').value=''; }; document.getElementById('btnGoogleSignIn').onclick=()=>toast('Demo: itt jelenne meg a Google bejelentkezés (OAuth)'); document.getElementById('btnGoogleImport').onclick=googleImportDemo; document.getElementById('btnTestNotify').onclick=()=>notifyLocal('FamilyHub','Ez egy teszt értesítés.');
+      // Web Push gombok
+      document.getElementById('btnPushEnable').onclick=pushEnable;
+      document.getElementById('btnPushDisable').onclick=pushDisable;
+      document.getElementById('btnPushTest').onclick=pushTest; document.getElementById('btnTestSW').onclick=testSW; document.getElementById('btnSelfTestICS').onclick=selfTestICS; document.getElementById('btnOpenOfflineTest').onclick=()=>{ const path='/offline-test-'+Math.random().toString(36).slice(2,6); const isBlob=location.protocol==='blob:'; const isFile=location.protocol==='file:'; const isOpaque=location.origin==='null'; const BASE=(isBlob||isFile||isOpaque)? '/' : (location.pathname.endsWith('/')?location.pathname:location.pathname.replace(/[^/]+$/, '')); const full=BASE+path.replace(/^\//,''); window.open(full, '_blank'); }; document.getElementById('btnUnregSW').onclick=unregisterAllSW; document.getElementById('btnClearCaches').onclick=clearAllCaches; document.getElementById('btnFactoryReset').onclick=async()=>{ await unregisterAllSW(); await clearAllCaches(); localStorage.removeItem('familyhub.data'); toast('Gyári visszaállítás kész. Frissítés…'); setTimeout(()=>location.reload(),600); }; }
 
     // ---------- Web Push kliens (beta) ----------
     const SERVER_BASE = 'https://YOUR-PUSH-SERVER.example.com'; // <-- Állítsd be a saját szervered URL-jére
