@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FamilyHub Napi Kör | Családi PWA</title>
+  <meta name="description" content="Családi irányítópult, közös napirend, offline-first PWA. Google Calendar szinkron (beta)." />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#3f51b5" />
+  <link rel="stylesheet" href="/styles.css" />
+  
+  <style>
+    /* Inline fontosabb stílusok */
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica Neue, Arial, Noto Sans;
+      background: linear-gradient(180deg, #0b1020, #0e1530);
+      color: #e6eefb;
+      box-sizing: border-box;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      background: rgba(11, 16, 32, 0.9);
+      border-bottom: 1px solid #1f2a44;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem 1rem;
+      z-index: 100;
+    }
+    header h1 {
+      font-weight: 700;
+      font-size: 1.5rem;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    header img.logo {
+      width: 32px;
+      height: 32px;
+    }
+    button {
+      background-color: #1a2442;
+      border: 2px solid #2a3a62;
+      border-radius: 12px;
+      color: #e6eefb;
+      padding: 0.6rem 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: border-color 0.3s ease;
+      margin-left: 8px;
+    }
+    button:hover:not(:disabled) {
+      border-color: #4cc9f0;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+    main.container {
+      padding: 1rem;
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1rem;
+    }
+    section.view {
+      background: #121a2f;
+      border-radius: 10px;
+      padding: 1rem;
+      box-shadow: 0 0 10px #0c4af6a1;
+      min-height: 300px;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>
+      <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Ccircle cx='64' cy='64' r='60' fill='%230b0bb3'/%3E%3Cpath d='M32 72c8-20 56-20 64 0-4 20-60 20-64 0z' fill='%2323fff3'/%3E%3Ccircle cx='48' cy='52' r='8' fill='%2323fff3'/%3E%3Ccircle cx='80' cy='52' r='8' fill='%2323fff3'/%3E%3C/svg%3E" alt="logo" class="logo" />
+      FamilyHub Napi Kör
+    </h1>
+    <div>
+      <button id="installBtn" disabled>Telepíts PWA</button>
+      <button id="notifBtn">Értesítések</button>
+      <button id="syncGoogleBtn">Google Calendar szinkron</button>
+      <button id="exportBtn">Adatok mentése</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section id="view-dashboard" class="view">Irányítópult tartalom</section>
+    <section id="view-calendar" class="view hidden">Naptár tartalom</section>
+    <section id="view-tasks" class="view hidden">Teendők tartalom</section>
+    <section id="view-shopping" class="view hidden">Bevásárlólista tartalom</section>
+    <section id="view-wall" class="view hidden">Családi fal tartalom</section>
+    <section id="view-settings" class="view hidden">Beállítások tartalom</section>
+  </main>
+
+  <script src="/app.js"></script>
+  <script>
+    // Service Worker regisztráció
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+        .then(reg => console.log('Service Worker regisztrálva:', reg))
+        .catch(err => console.error('SW regisztráció hiba:', err));
+      });
+    }
+
+    // PWA telepítés prompt kezelése
+    let deferredPrompt;
+    const installBtn = document.getElementById('installBtn');
+
+    window.addEventListener('beforeinstallprompt', e => {
+      e.preventDefault();
+      deferredPrompt = e;
+      installBtn.disabled = false;
+    });
+
+    installBtn.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      const choice = await deferredPrompt.userChoice;
+      if (choice.outcome === 'accepted') console.log('PWA telepítés elfogadva');
+      deferredPrompt = null;
+      installBtn.disabled = true;
+    });
+
+    // Értesítések kezelése
+    const notifBtn = document.getElementById('notifBtn');
+
+    async function requestNotificationPermission() {
+      if (!('Notification' in window)) {
+        alert('Az értesítések nem támogatottak a böngészőben.');
+        return false;
+      }
+      if (Notification.permission === 'granted') return true;
+      const permission = await Notification.requestPermission();
+      return permission === 'granted';
+    }
+
+    notifBtn.addEventListener('click', async () => {
+      if (await requestNotificationPermission()) {
+        alert('Értesítések engedélyezve.');
+      } else {
+        alert('Értesítések nem engedélyezettek.');
+      }
+    });
+
+    // Google Calendar szinkron gomb esemény (itt bővíthető)
+    document.getElementById('syncGoogleBtn').addEventListener('click', () => {
+      alert('Google Calendar szinkron funkció fejlesztés alatt.');
+    });
+
+  </script>
+</body>
+</html>
