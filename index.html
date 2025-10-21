@@ -1,15 +1,171 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="hu">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0ea5e9"/>
-    <link rel="manifest" href="%BASE_URL%manifest.webmanifest"/>
-    <link rel="icon" href="%BASE_URL%icons/icon-192.png"/>
-    <title>FamBoard Base</title>
-  </head>
-  <body class="bg-slate-50">
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FamilyBoard – minimál verzió</title>
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background: #f7f9fb;
+      margin: 0;
+      padding: 0;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    header {
+      background: #0ea5e9;
+      color: white;
+      width: 100%;
+      padding: 1rem;
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+    main {
+      max-width: 600px;
+      width: 90%;
+      margin: 2rem auto;
+      background: white;
+      padding: 1.5rem;
+      border-radius: 1rem;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    h2 {
+      margin-top: 0;
+      border-bottom: 2px solid #0ea5e9;
+      padding-bottom: .3rem;
+    }
+    .todo-input {
+      display: flex;
+      gap: .5rem;
+      margin-bottom: 1rem;
+    }
+    input, button {
+      font-size: 1rem;
+      padding: .5rem;
+      border-radius: .5rem;
+      border: 1px solid #ccc;
+    }
+    button {
+      background: #0ea5e9;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0284c7;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: .4rem .6rem;
+      border-bottom: 1px solid #eee;
+    }
+    li.done span {
+      text-decoration: line-through;
+      color: #999;
+    }
+    .calendar {
+      margin-top: 2rem;
+    }
+    .calendar input {
+      width: 100%;
+      margin-top: .5rem;
+    }
+  </style>
+</head>
+<body>
+  <header>📋 FamilyBoard</header>
+  <main>
+    <section id="tasks">
+      <h2>Teendők</h2>
+      <div class="todo-input">
+        <input type="text" id="taskInput" placeholder="Új teendő..." />
+        <button id="addTask">Hozzáadás</button>
+      </div>
+      <ul id="taskList"></ul>
+    </section>
+
+    <section class="calendar">
+      <h2>Naptár</h2>
+      <input type="date" id="datePicker" />
+      <p id="selectedDate">Kiválasztott dátum: <strong>-</strong></p>
+    </section>
+  </main>
+
+  <script>
+    const input = document.getElementById('taskInput');
+    const addBtn = document.getElementById('addTask');
+    const list = document.getElementById('taskList');
+    const datePicker = document.getElementById('datePicker');
+    const selectedDate = document.getElementById('selectedDate');
+
+    let tasks = JSON.parse(localStorage.getItem('familyboard_tasks') || '[]');
+
+    function render() {
+      list.innerHTML = '';
+      tasks.forEach((t, i) => {
+        const li = document.createElement('li');
+        li.className = t.done ? 'done' : '';
+        const span = document.createElement('span');
+        span.textContent = t.text;
+        const check = document.createElement('input');
+        check.type = 'checkbox';
+        check.checked = t.done;
+        check.onchange = () => {
+          tasks[i].done = !tasks[i].done;
+          save();
+        };
+        const del = document.createElement('button');
+        del.textContent = '🗑️';
+        del.onclick = () => {
+          tasks.splice(i,1);
+          save();
+        };
+        li.append(check, span, del);
+        list.appendChild(li);
+      });
+    }
+
+    function save() {
+      localStorage.setItem('familyboard_tasks', JSON.stringify(tasks));
+      render();
+    }
+
+    addBtn.onclick = () => {
+      const text = input.value.trim();
+      if (!text) return;
+      tasks.push({ text, done:false });
+      input.value = '';
+      save();
+    };
+
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') addBtn.click();
+    });
+
+    datePicker.onchange = () => {
+      const val = datePicker.value;
+      selectedDate.innerHTML = `Kiválasztott dátum: <strong>${val || '-'}</strong>`;
+      localStorage.setItem('familyboard_selectedDate', val);
+    };
+
+    // Load previous state
+    render();
+    const savedDate = localStorage.getItem('familyboard_selectedDate');
+    if (savedDate) {
+      datePicker.value = savedDate;
+      selectedDate.innerHTML = `Kiválasztott dátum: <strong>${savedDate}</strong>`;
+    }
+  </script>
+</body>
 </html>
