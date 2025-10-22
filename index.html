@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>FamilyBoard – Teendők + Bevásárlólista</title>
+  <title>FamilyBoard – Teendők + Bevásárlólista (időponttal)</title>
   <style>
     :root{
       --primary:#0ea5e9;
@@ -28,12 +28,17 @@
     .row{display:flex; gap:8px; align-items:center}
     button{cursor:pointer; border:none; background:var(--primary); color:#fff; padding:8px 12px; border-radius:10px; font-weight:600}
     button.ghost{background:transparent; color:var(--primary); border:1px solid var(--primary)}
-    input[type="text"]{flex:1; padding:10px 12px; border-radius:10px; border:1px solid var(--border); font-size:15px}
+    input[type="text"], input[type="time"]{padding:10px 12px; border-radius:10px; border:1px solid var(--border); font-size:15px}
+    input[type="text"]{flex:1}
     .tiny{font-size:12px; color:var(--muted)}
     ul{list-style:none; margin:10px 0 0; padding:0}
     li.task{display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--border); padding:8px 4px}
     li.task:last-child{border-bottom:none}
-    li.task.done span{ text-decoration: line-through; color:#9ca3af }
+    li.task.done span.txt{ text-decoration: line-through; color:#9ca3af }
+    .badge-time{
+      font-size:12px; background:#0ea5e91a; color:#0369a1; border:1px solid #bae6fd;
+      padding:3px 8px; border-radius:999px;
+    }
     .right{margin-left:auto}
     /* Calendar */
     .cal-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px}
@@ -46,7 +51,6 @@
     }
     .day.out{color:#bbb; background:#fafafa}
     .day.selected{outline:2px solid var(--primary); box-shadow:0 0 0 3px rgba(14,165,233,.15)}
-    .dot{position:absolute; left:8px; bottom:6px; width:8px; height:8px; border-radius:50%; background:var(--primary)}
     .count{position:absolute; left:6px; top:6px; font-size:11px; color:#fff; background:var(--primary); padding:2px 6px; border-radius:999px}
   </style>
 </head>
@@ -67,11 +71,16 @@
 
       <div class="card" style="margin-top:12px">
         <h2>Teendők – <span id="dateOut" class="muted">-</span></h2>
-        <div class="row" style="margin-bottom:8px">
+        <div class="row" style="margin-bottom:8px; flex-wrap:wrap">
           <input type="text" id="taskInput" placeholder="Új teendő..." />
+          <input type="time" id="taskTime" aria-label="Időpont (óra:perc)" />
           <button id="addTask">Hozzáadás</button>
         </div>
         <ul id="taskList"></ul>
+        <div class="row tiny" style="margin-top:8px">
+          <span>Idő szerinti rendezés automatikus • üres idő = lista végére</span>
+          <button id="clearDone" class="ghost right">Kész teendők törlése</button>
+        </div>
       </div>
     </section>
 
@@ -96,13 +105,15 @@
     const ymdOf = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
     const today = () => ymdOf(new Date());
     const DOW = ['H','K','Sze','Cs','P','Szo','V'];
+    const validTime = t => /^([01]\d|2[0-3]):[0-5]\d$/.test(t);
 
     function uuid(){ return crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) }
     function load(k,f){ try{return JSON.parse(localStorage.getItem(k))||f}catch{return f} }
     function save(k,v){ localStorage.setItem(k,JSON.stringify(v)) }
 
     // ----- Data -----
-    let tasksByDate = load('fb_tasks',{});
+    // tasksByDate[date] = [{id,text,done,time? 'HH:MM'}]
+    let tasksByDate = load('fb_tasks_v2', load('fb_tasks', {})); // gyengéd migráció a régi kulcsról
     let shopping = load('fb_shopping',[]);
     let selected = today();
     let viewMonth = selected.slice(0,7)+'-01';
@@ -138,11 +149,11 @@
         cell.textContent=d.getDate();
         if(d.getMonth()!==first.getMonth())cell.classList.add('out');
         if(ymd===selected)cell.classList.add('selected');
-        const arr=tasksByDate[ymd]||[];
+        const arr=(tasksByDate[ymd]||[]);
         if(arr.length){
-          const done=arr.filter(x=>x.done).length;
+          const pending = arr.filter(x=>!x.done).length;
           const c=document.createElement('div');
-          c.className='count'; c.textContent = done===arr.length?'✓':arr.length-done;
+          c.className='count'; c.textContent = pending===0 ? '✓' : pending;
           cell.appendChild(c);
         }
         cell.onclick=()=>{selected=ymd; renderCalendar(); renderTasks();};
@@ -150,40 +161,91 @@
       }
     }
 
-    // ----- Tasks -----
+    // ----- Tasks (with time) -----
     const list=$('#taskList');
     const taskInput=$('#taskInput');
+    const taskTime=$('#taskTime');
     const addTask=$('#addTask');
     const dateOut=$('#dateOut');
+    const clearDoneBtn=$('#clearDone');
 
     addTask.onclick=()=>{
       const text=taskInput.value.trim();
-      if(!text)return;
+      let time=taskTime.value.trim();
+      if(!text) return;
+      if(time && !validTime(time)) { alert('Érvénytelen idő (HH:MM)'); return; }
       const arr=tasksByDate[selected]||(tasksByDate[selected]=[]);
-      arr.push({id:uuid(),text,done:false});
-      taskInput.value='';
-      save('fb_tasks',tasksByDate);
+      arr.push({id:uuid(),text,done:false,time: time || ""});
+      taskInput.value=''; taskTime.value='';
+      save('fb_tasks_v2',tasksByDate);
       renderTasks(); renderCalendar();
     };
     taskInput.onkeydown=e=>{if(e.key==='Enter')addTask.click();};
+    taskTime.onkeydown=e=>{if(e.key==='Enter')addTask.click();};
+
+    function timeToMinutes(t){
+      if(!t || !validTime(t)) return 1e9; // üres idő a végére
+      const [h,m]=t.split(':').map(Number);
+      return h*60+m;
+    }
 
     function renderTasks(){
-      const arr=tasksByDate[selected]||[];
+      const arr=(tasksByDate[selected]||[]).slice().sort((a,b)=> timeToMinutes(a.time)-timeToMinutes(b.time));
       dateOut.textContent=selected;
       list.innerHTML='';
-      if(!arr.length){const p=document.createElement('p');p.textContent='Nincs teendő.';p.className='muted';list.appendChild(p);return;}
-      arr.forEach((t,i)=>{
+      if(!arr.length){
+        const p=document.createElement('p');p.textContent='Nincs teendő.';p.className='muted';list.appendChild(p);return;
+      }
+      arr.forEach((t)=>{
         const li=document.createElement('li');
         li.className='task'+(t.done?' done':'');
         const cb=document.createElement('input');cb.type='checkbox';cb.checked=t.done;
-        cb.onchange=()=>{t.done=!t.done;save('fb_tasks',tasksByDate);renderTasks();renderCalendar();};
-        const span=document.createElement('span');span.textContent=t.text;
+        cb.onchange=()=>{t.done=!t.done;commitUpdate(t);};
+        const timeBadge=document.createElement('span');
+        timeBadge.className='badge-time';
+        timeBadge.textContent = t.time ? `🕒 ${t.time}` : '—';
+        const timeEdit=document.createElement('button'); timeEdit.textContent='✏️'; timeEdit.className='ghost';
+        timeEdit.title='Idő módosítása';
+        timeEdit.onclick=()=>{
+          const nv = prompt('Idő (HH:MM, üres = nincs)', t.time || '');
+          if(nv===null) return;
+          if(nv!=='' && !validTime(nv)) { alert('Érvénytelen idő (HH:MM)'); return; }
+          t.time = nv;
+          commitUpdate(t, true);
+        };
+        const span=document.createElement('span'); span.className='txt'; span.textContent=t.text;
         const del=document.createElement('button');del.textContent='🗑️';del.className='ghost';
-        del.onclick=()=>{arr.splice(i,1);save('fb_tasks',tasksByDate);renderTasks();renderCalendar();};
-        li.append(cb,span,del);
+        del.onclick=()=>{ removeTask(t.id); };
+        const right=document.createElement('span'); right.className='right';
+        li.append(cb, timeBadge, timeEdit, span, right, del);
         list.appendChild(li);
       });
     }
+
+    function commitUpdate(task, reRenderSort=false){
+      // megtaláljuk a feladatot a dátum listában és frissítjük
+      const arr = tasksByDate[selected] || [];
+      const idx = arr.findIndex(x=>x.id===task.id);
+      if(idx>-1) arr[idx]=task;
+      save('fb_tasks_v2', tasksByDate);
+      if(reRenderSort) renderTasks(); else renderTasks();
+      renderCalendar();
+    }
+
+    function removeTask(id){
+      const arr = tasksByDate[selected] || [];
+      const i = arr.findIndex(x=>x.id===id);
+      if(i>-1) arr.splice(i,1);
+      save('fb_tasks_v2', tasksByDate);
+      renderTasks(); renderCalendar();
+    }
+
+    clearDoneBtn.onclick=()=>{
+      const arr = tasksByDate[selected] || [];
+      tasksByDate[selected] = arr.filter(t=>!t.done);
+      save('fb_tasks_v2', tasksByDate);
+      renderTasks(); renderCalendar();
+    };
 
     // ----- Shopping -----
     const shopInput=$('#shopInput');
@@ -211,7 +273,7 @@
         li.className='task'+(i.done?' done':'');
         const cb=document.createElement('input');cb.type='checkbox';cb.checked=i.done;
         cb.onchange=()=>{i.done=!i.done;save('fb_shopping',shopping);renderShopping();};
-        const span=document.createElement('span');span.textContent=i.text;
+        const span=document.createElement('span');span.className='txt'; span.textContent=i.text;
         const del=document.createElement('button');del.textContent='🗑️';del.className='ghost';
         del.onclick=()=>{shopping.splice(idx,1);save('fb_shopping',shopping);renderShopping();};
         li.append(cb,span,del);
