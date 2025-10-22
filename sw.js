@@ -1,15 +1,35 @@
-const CACHE = 'familyboard-v1';
-const ASSETS = ['./','./index.html','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png'];
-self.addEventListener('install', e=>{ e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS))); self.skipWaiting(); });
-self.addEventListener('activate', e=>{ e.waitUntil(self.clients.claim()); });
-self.addEventListener('fetch', e=>{
+const CACHE = 'familyboard-v2';
+const ASSETS = [
+  './',
+  './index.html?v=2',
+  './manifest.webmanifest?v=2',
+  './icons/icon-192.png',
+  './icons/icon-512.png'
+];
+
+self.addEventListener('install', (e)=>{
+  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)));
+  self.skipWaiting();
+});
+self.addEventListener('activate', (e)=>{
+  e.waitUntil((async ()=>{
+    // régi cache-ek törlése
+    const keys = await caches.keys();
+    await Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)));
+    await self.clients.claim();
+  })());
+});
+self.addEventListener('fetch', (e)=>{
   if(e.request.method!=='GET') return;
   e.respondWith((async ()=>{
     const cached = await caches.match(e.request);
     try{
       const fresh = await fetch(e.request);
-      const c = await caches.open(CACHE); c.put(e.request, fresh.clone());
+      const c = await caches.open(CACHE);
+      c.put(e.request, fresh.clone());
       return fresh;
-    }catch{ return cached || Response.error(); }
+    }catch{
+      return cached || Response.error();
+    }
   })());
 });
