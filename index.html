@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>FamilyBoard – Napi teendők naptár szerint</title>
+  <title>FamilyBoard – Teendők + Bevásárlólista</title>
   <style>
     :root{
       --primary:#0ea5e9;
@@ -20,17 +20,21 @@
       display:flex; flex-direction:column; align-items:center; min-height:100vh;
     }
     header{width:100%; background:var(--primary); color:#fff; padding:14px 16px; text-align:center; font-size:20px; font-weight:700}
-    main{width:min(900px,92vw); margin:18px auto; display:grid; gap:16px; grid-template-columns:1fr; }
-    @media (min-width:900px){ main{ grid-template-columns: 1.1fr 1fr; } }
+    main{width:min(950px,94vw); margin:18px auto; display:grid; gap:16px; grid-template-columns:1fr;}
+    @media (min-width:900px){ main{ grid-template-columns: 1.2fr 1fr; } }
     .card{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:14px; box-shadow:0 6px 24px rgba(0,0,0,.05)}
     h2{margin:0 0 10px; font-size:18px}
     .muted{color:var(--muted)}
     .row{display:flex; gap:8px; align-items:center}
-    .right{margin-left:auto}
     button{cursor:pointer; border:none; background:var(--primary); color:#fff; padding:8px 12px; border-radius:10px; font-weight:600}
     button.ghost{background:transparent; color:var(--primary); border:1px solid var(--primary)}
     input[type="text"]{flex:1; padding:10px 12px; border-radius:10px; border:1px solid var(--border); font-size:15px}
-    .kpi{font-size:13px; color:var(--muted)}
+    .tiny{font-size:12px; color:var(--muted)}
+    ul{list-style:none; margin:10px 0 0; padding:0}
+    li.task{display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--border); padding:8px 4px}
+    li.task:last-child{border-bottom:none}
+    li.task.done span{ text-decoration: line-through; color:#9ca3af }
+    .right{margin-left:auto}
     /* Calendar */
     .cal-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px}
     .cal-head h3{margin:0; font-size:16px}
@@ -44,231 +48,181 @@
     .day.selected{outline:2px solid var(--primary); box-shadow:0 0 0 3px rgba(14,165,233,.15)}
     .dot{position:absolute; left:8px; bottom:6px; width:8px; height:8px; border-radius:50%; background:var(--primary)}
     .count{position:absolute; left:6px; top:6px; font-size:11px; color:#fff; background:var(--primary); padding:2px 6px; border-radius:999px}
-    /* Tasks */
-    ul{list-style:none; margin:10px 0 0; padding:0}
-    li.task{display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--border); padding:8px 4px}
-    li.task:last-child{border-bottom:none}
-    li.task.done span{ text-decoration: line-through; color:#9ca3af }
-    .tiny{font-size:12px; color:var(--muted)}
-    .actions{display:flex; gap:6px}
   </style>
 </head>
 <body>
-  <header>📅 FamilyBoard – napi teendők</header>
+  <header>🧭 FamilyBoard</header>
 
   <main>
-    <!-- Calendar -->
-    <section class="card">
-      <div class="cal-head">
-        <div class="row">
+    <!-- BAL: naptár + napi teendők -->
+    <section>
+      <div class="card">
+        <div class="cal-head">
           <button id="prev" class="ghost">◀</button>
-          <button id="todayBtn" class="ghost">Ma</button>
+          <h3 id="monthLabel">2025. október</h3>
           <button id="next" class="ghost">▶</button>
         </div>
-        <h3 id="monthLabel">2025. október</h3>
-        <input type="date" id="datePicker" />
+        <div class="cal-grid" id="calGrid"></div>
       </div>
-      <div class="cal-grid" id="calGrid">
-        <!-- DOW -->
+
+      <div class="card" style="margin-top:12px">
+        <h2>Teendők – <span id="dateOut" class="muted">-</span></h2>
+        <div class="row" style="margin-bottom:8px">
+          <input type="text" id="taskInput" placeholder="Új teendő..." />
+          <button id="addTask">Hozzáadás</button>
+        </div>
+        <ul id="taskList"></ul>
       </div>
-      <p class="tiny">Tipp: kattints egy napra, hogy arra a dátumra rögzíts teendőket.</p>
     </section>
 
-    <!-- Tasks for selected date -->
-    <section class="card">
-      <h2 id="dayTitle">Teendők – <span class="muted" id="dateOut">-</span></h2>
-      <div class="row" style="margin-bottom:8px">
-        <input type="text" id="taskInput" placeholder="Új teendő a kiválasztott napra..." />
-        <button id="addBtn">Hozzáadás</button>
+    <!-- JOBB: bevásárlólista -->
+    <section>
+      <div class="card">
+        <h2>🛒 Bevásárlólista</h2>
+        <div class="row" style="margin-bottom:8px">
+          <input type="text" id="shopInput" placeholder="Új tétel..." />
+          <button id="addItem">Hozzáadás</button>
+        </div>
+        <ul id="shopList"></ul>
+        <p class="tiny">A lista automatikusan mentésre kerül (localStorage).</p>
       </div>
-      <div class="row kpi">
-        <span id="kpi"></span>
-        <span class="right">
-          <button id="clearDone" class="ghost">Kész teendők törlése</button>
-        </span>
-      </div>
-      <ul id="list"></ul>
     </section>
   </main>
 
   <script>
-    // --- Data model in localStorage ---
-    // tasksByDate: { "YYYY-MM-DD": [{id,text,done}], ... }
-    const LS_KEY = 'familyboard_tasksByDate_v1';
-    const $ = sel => document.querySelector(sel);
-    const calGrid = $('#calGrid');
-    const monthLabel = $('#monthLabel');
-    const datePicker = $('#datePicker');
-    const prevBtn = $('#prev'), nextBtn = $('#next'), todayBtn = $('#todayBtn');
-
-    const list = $('#list');
-    const input = $('#taskInput');
-    const addBtn = $('#addBtn');
-    const kpi = $('#kpi');
-    const clearDoneBtn = $('#clearDone');
-    const dateOut = $('#dateOut');
-
+    // ----- Helper -----
+    const $ = s => document.querySelector(s);
+    const pad = n => String(n).padStart(2, "0");
+    const ymdOf = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    const today = () => ymdOf(new Date());
     const DOW = ['H','K','Sze','Cs','P','Szo','V'];
 
-    let tasksByDate = readLS(LS_KEY, {});
-    let view = today(); // month in view (YYYY-MM-01)
-    let selected = today(); // selected date YYYY-MM-DD
+    function uuid(){ return crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) }
+    function load(k,f){ try{return JSON.parse(localStorage.getItem(k))||f}catch{return f} }
+    function save(k,v){ localStorage.setItem(k,JSON.stringify(v)) }
 
-    // ---- Utilities ----
-    function readLS(key, fallback){
-      try{ return JSON.parse(localStorage.getItem(key)) ?? fallback }catch{ return fallback }
-    }
-    function writeLS(){ localStorage.setItem(LS_KEY, JSON.stringify(tasksByDate)) }
-    function pad(n){ return String(n).padStart(2,'0') }
-    function today(){
-      const d = new Date();
-      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-    }
-    function ymdOf(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}
-    function firstOfMonth(ymd){
-      const [y,m] = ymd.split('-').map(Number);
-      return new Date(y, m-1, 1);
-    }
-    function addMonths(ymd, n){
-      const [y,m] = ymd.split('-').map(Number);
-      const d = new Date(y, m-1+n, 1);
-      return ymdOf(new Date(d.getFullYear(), d.getMonth(), 1));
-    }
-    function fmtMonth(d){
-      const y = d.getFullYear(); const m = d.toLocaleString('hu-HU',{month:'long'});
-      return `${y}. ${m}`;
-    }
-    function uuid(){ return (crypto&&crypto.randomUUID) ? crypto.randomUUID() : 'id_'+Math.random().toString(36).slice(2) }
+    // ----- Data -----
+    let tasksByDate = load('fb_tasks',{});
+    let shopping = load('fb_shopping',[]);
+    let selected = today();
+    let viewMonth = selected.slice(0,7)+'-01';
 
-    // ---- Calendar render ----
-    function renderCalendar(){
-      // header row with DOW
-      calGrid.innerHTML = '';
-      for(const w of DOW){
-        const el = document.createElement('div');
-        el.className = 'dow';
-        el.textContent = w;
-        calGrid.appendChild(el);
-      }
-      const first = firstOfMonth(view);
-      monthLabel.textContent = fmtMonth(first);
+    // ----- Calendar -----
+    const calGrid = $('#calGrid');
+    const monthLabel = $('#monthLabel');
+    $('#prev').onclick = ()=>{ moveMonth(-1); };
+    $('#next').onclick = ()=>{ moveMonth(1); };
 
-      // Determine grid range (start from Monday)
-      const start = new Date(first);
-      const shift = (start.getDay() + 6) % 7; // Mon=0 ... Sun=6
-      start.setDate(start.getDate() - shift);
-      // 6 weeks grid (42 days)
-      for(let i=0;i<42;i++){
-        const d = new Date(start);
-        d.setDate(start.getDate()+i);
-        const ymd = ymdOf(d);
-        const cell = document.createElement('button');
-        cell.type = 'button';
-        cell.className = 'day';
-        // mark days out of current month
-        if (d.getMonth() !== first.getMonth()) cell.classList.add('out');
-        cell.textContent = d.getDate();
-
-        // highlights
-        if (ymd === selected) cell.classList.add('selected');
-        const tasks = tasksByDate[ymd] || [];
-        const doneCount = tasks.filter(t=>t.done).length;
-        if (tasks.length){
-          const dot = document.createElement('div'); dot.className='dot';
-          cell.appendChild(dot);
-          const c = document.createElement('div'); c.className='count'; c.textContent = tasks.length - doneCount;
-          if (doneCount === tasks.length) c.textContent = '✓';
-          cell.appendChild(c);
-        }
-
-        cell.addEventListener('click', ()=>{
-          selected = ymd;
-          datePicker.value = selected;
-          renderCalendar();
-          renderTasks();
-        });
-        calGrid.appendChild(cell);
-      }
-      // update datePicker to currently selected
-      datePicker.value = selected;
-    }
-
-    // ---- Tasks render ----
-    function renderTasks(){
-      const arr = tasksByDate[selected] || [];
-      dateOut.textContent = selected;
-      list.innerHTML = '';
-      if (!arr.length){
-        const p = document.createElement('p');
-        p.className = 'muted';
-        p.textContent = 'Nincs teendő ezen a napon.';
-        list.appendChild(p);
-      } else {
-        arr.forEach((t, idx)=>{
-          const li = document.createElement('li');
-          li.className = 'task' + (t.done ? ' done' : '');
-          const cb = document.createElement('input'); cb.type='checkbox'; cb.checked = t.done;
-          cb.onchange = ()=>{ t.done = !t.done; save(); };
-          const span = document.createElement('span'); span.textContent = t.text;
-          const del = document.createElement('button'); del.textContent='🗑️'; del.className='ghost';
-          del.onclick = ()=>{ arr.splice(idx,1); save(); };
-          li.append(cb, span, del);
-          list.appendChild(li);
-        });
-      }
-      const total = arr.length;
-      const done = arr.filter(t=>t.done).length;
-      kpi.textContent = total ? `Kész: ${done}/${total}` : '—';
-    }
-
-    function save(){
-      writeLS();
-      renderTasks();
+    function moveMonth(offset){
+      const [y,m]=viewMonth.split('-').map(Number);
+      const d=new Date(y,m-1+offset,1);
+      viewMonth = ymdOf(new Date(d.getFullYear(), d.getMonth(), 1));
       renderCalendar();
     }
 
-    // ---- Events ----
-    addBtn.onclick = ()=>{
-      const text = input.value.trim();
-      if(!text) return;
-      const arr = tasksByDate[selected] || (tasksByDate[selected] = []);
-      arr.push({ id: uuid(), text, done:false });
-      input.value = '';
-      save();
-    };
-    input.addEventListener('keydown', e=> { if(e.key==='Enter') addBtn.click(); });
-
-    clearDoneBtn.onclick = ()=>{
-      const arr = tasksByDate[selected] || [];
-      tasksByDate[selected] = arr.filter(t=>!t.done);
-      save();
-    };
-
-    prevBtn.onclick = ()=>{ view = addMonths(view, -1); renderCalendar(); };
-    nextBtn.onclick = ()=>{ view = addMonths(view, 1); renderCalendar(); };
-    todayBtn.onclick = ()=>{ selected = today(); view = selected.slice(0,7)+'-01'; renderCalendar(); renderTasks(); };
-    datePicker.onchange = ()=>{
-      if (!datePicker.value) return;
-      selected = datePicker.value;
-      view = selected.slice(0,7)+'-01';
-      renderCalendar(); renderTasks();
-    };
-
-    // ---- Boot ----
-    // migrate old (optional): if you used earlier version with 'familyboard_tasks' array
-    try{
-      const legacy = JSON.parse(localStorage.getItem('familyboard_tasks')||'null');
-      if(Array.isArray(legacy) && legacy.length){
-        const d=today();
-        tasksByDate[d] = (tasksByDate[d]||[]).concat(legacy.map(x=>({id:uuid(), text:x.text||x, done:!!x.done})));
-        localStorage.removeItem('familyboard_tasks');
-        writeLS();
+    function renderCalendar(){
+      calGrid.innerHTML='';
+      DOW.forEach(d=>{const el=document.createElement('div');el.className='dow';el.textContent=d;calGrid.appendChild(el);});
+      const [y,m]=viewMonth.split('-').map(Number);
+      const first=new Date(y,m-1,1);
+      monthLabel.textContent=`${y}. ${first.toLocaleString('hu-HU',{month:'long'})}`;
+      const start=new Date(first);
+      const shift=(start.getDay()+6)%7;
+      start.setDate(start.getDate()-shift);
+      for(let i=0;i<42;i++){
+        const d=new Date(start);
+        d.setDate(start.getDate()+i);
+        const ymd=ymdOf(d);
+        const cell=document.createElement('button');
+        cell.className='day';
+        cell.textContent=d.getDate();
+        if(d.getMonth()!==first.getMonth())cell.classList.add('out');
+        if(ymd===selected)cell.classList.add('selected');
+        const arr=tasksByDate[ymd]||[];
+        if(arr.length){
+          const done=arr.filter(x=>x.done).length;
+          const c=document.createElement('div');
+          c.className='count'; c.textContent = done===arr.length?'✓':arr.length-done;
+          cell.appendChild(c);
+        }
+        cell.onclick=()=>{selected=ymd; renderCalendar(); renderTasks();};
+        calGrid.appendChild(cell);
       }
-    }catch{}
-    // init view to month of selected
-    view = selected.slice(0,7)+'-01';
+    }
+
+    // ----- Tasks -----
+    const list=$('#taskList');
+    const taskInput=$('#taskInput');
+    const addTask=$('#addTask');
+    const dateOut=$('#dateOut');
+
+    addTask.onclick=()=>{
+      const text=taskInput.value.trim();
+      if(!text)return;
+      const arr=tasksByDate[selected]||(tasksByDate[selected]=[]);
+      arr.push({id:uuid(),text,done:false});
+      taskInput.value='';
+      save('fb_tasks',tasksByDate);
+      renderTasks(); renderCalendar();
+    };
+    taskInput.onkeydown=e=>{if(e.key==='Enter')addTask.click();};
+
+    function renderTasks(){
+      const arr=tasksByDate[selected]||[];
+      dateOut.textContent=selected;
+      list.innerHTML='';
+      if(!arr.length){const p=document.createElement('p');p.textContent='Nincs teendő.';p.className='muted';list.appendChild(p);return;}
+      arr.forEach((t,i)=>{
+        const li=document.createElement('li');
+        li.className='task'+(t.done?' done':'');
+        const cb=document.createElement('input');cb.type='checkbox';cb.checked=t.done;
+        cb.onchange=()=>{t.done=!t.done;save('fb_tasks',tasksByDate);renderTasks();renderCalendar();};
+        const span=document.createElement('span');span.textContent=t.text;
+        const del=document.createElement('button');del.textContent='🗑️';del.className='ghost';
+        del.onclick=()=>{arr.splice(i,1);save('fb_tasks',tasksByDate);renderTasks();renderCalendar();};
+        li.append(cb,span,del);
+        list.appendChild(li);
+      });
+    }
+
+    // ----- Shopping -----
+    const shopInput=$('#shopInput');
+    const addItem=$('#addItem');
+    const shopList=$('#shopList');
+
+    addItem.onclick=()=>{
+      const text=shopInput.value.trim();
+      if(!text)return;
+      shopping.push({id:uuid(),text,done:false});
+      shopInput.value='';
+      save('fb_shopping',shopping);
+      renderShopping();
+    };
+    shopInput.onkeydown=e=>{if(e.key==='Enter')addItem.click();};
+
+    function renderShopping(){
+      shopList.innerHTML='';
+      if(!shopping.length){
+        const p=document.createElement('p');p.textContent='Üres bevásárlólista.';p.className='muted';
+        shopList.appendChild(p);return;
+      }
+      shopping.forEach((i,idx)=>{
+        const li=document.createElement('li');
+        li.className='task'+(i.done?' done':'');
+        const cb=document.createElement('input');cb.type='checkbox';cb.checked=i.done;
+        cb.onchange=()=>{i.done=!i.done;save('fb_shopping',shopping);renderShopping();};
+        const span=document.createElement('span');span.textContent=i.text;
+        const del=document.createElement('button');del.textContent='🗑️';del.className='ghost';
+        del.onclick=()=>{shopping.splice(idx,1);save('fb_shopping',shopping);renderShopping();};
+        li.append(cb,span,del);
+        shopList.appendChild(li);
+      });
+    }
+
+    // ----- Init -----
     renderCalendar();
     renderTasks();
+    renderShopping();
   </script>
 </body>
 </html>
