@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>FamilyBoard – Teendők + Bevásárlólista (időponttal)</title>
+  <title>FamilyBoard – Teendők + Bevásárlólista (időponttal, PIN törléshez)</title>
   <style>
     :root{
       --primary:#0ea5e9;
@@ -93,12 +93,19 @@
           <button id="addItem">Hozzáadás</button>
         </div>
         <ul id="shopList"></ul>
-        <p class="tiny">A lista automatikusan mentésre kerül (localStorage).</p>
+        <p class="tiny">A lista automatikusan mentésre kerül (localStorage). Törléshez PIN szükséges.</p>
       </div>
     </section>
   </main>
 
   <script>
+    // ----- PIN védelem törléshez -----
+    const PIN_CODE = "2025";
+    function requirePin() {
+      const input = prompt("PIN szükséges a törléshez:");
+      return input === PIN_CODE;
+    }
+
     // ----- Helper -----
     const $ = s => document.querySelector(s);
     const pad = n => String(n).padStart(2, "0");
@@ -113,7 +120,7 @@
 
     // ----- Data -----
     // tasksByDate[date] = [{id,text,done,time? 'HH:MM'}]
-    let tasksByDate = load('fb_tasks_v2', load('fb_tasks', {})); // gyengéd migráció a régi kulcsról
+    let tasksByDate = load('fb_tasks_v2', load('fb_tasks', {})); // migráció a régi kulcsról
     let shopping = load('fb_shopping',[]);
     let selected = today();
     let viewMonth = selected.slice(0,7)+'-01';
@@ -215,7 +222,10 @@
         };
         const span=document.createElement('span'); span.className='txt'; span.textContent=t.text;
         const del=document.createElement('button');del.textContent='🗑️';del.className='ghost';
-        del.onclick=()=>{ removeTask(t.id); };
+        del.onclick=()=>{ 
+          if(!requirePin()) return;
+          removeTask(t.id); 
+        };
         const right=document.createElement('span'); right.className='right';
         li.append(cb, timeBadge, timeEdit, span, right, del);
         list.appendChild(li);
@@ -223,12 +233,11 @@
     }
 
     function commitUpdate(task, reRenderSort=false){
-      // megtaláljuk a feladatot a dátum listában és frissítjük
       const arr = tasksByDate[selected] || [];
       const idx = arr.findIndex(x=>x.id===task.id);
       if(idx>-1) arr[idx]=task;
       save('fb_tasks_v2', tasksByDate);
-      if(reRenderSort) renderTasks(); else renderTasks();
+      renderTasks();
       renderCalendar();
     }
 
@@ -241,6 +250,7 @@
     }
 
     clearDoneBtn.onclick=()=>{
+      if(!requirePin()) return;
       const arr = tasksByDate[selected] || [];
       tasksByDate[selected] = arr.filter(t=>!t.done);
       save('fb_tasks_v2', tasksByDate);
@@ -275,7 +285,12 @@
         cb.onchange=()=>{i.done=!i.done;save('fb_shopping',shopping);renderShopping();};
         const span=document.createElement('span');span.className='txt'; span.textContent=i.text;
         const del=document.createElement('button');del.textContent='🗑️';del.className='ghost';
-        del.onclick=()=>{shopping.splice(idx,1);save('fb_shopping',shopping);renderShopping();};
+        del.onclick=()=>{ 
+          if(!requirePin()) return;
+          shopping.splice(idx,1); 
+          save('fb_shopping',shopping); 
+          renderShopping(); 
+        };
         li.append(cb,span,del);
         shopList.appendChild(li);
       });
