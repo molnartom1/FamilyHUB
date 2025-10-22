@@ -1,34 +1,419 @@
-const CACHE = 'familyboard-v3';
-const ASSETS = [
-  './',
-  './index.html?v=3',
-  './manifest.webmanifest?v=3',
-  './icons/icon-192.png',
-  './icons/icon-512.png'
-];
-
-self.addEventListener('install', (e)=>{
-  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)));
-  self.skipWaiting();
-});
-self.addEventListener('activate', async (e)=>{
-  e.waitUntil((async ()=>{
-    const keys = await caches.keys();
-    await Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)));
-    await self.clients.claim();
-  })());
-});
-self.addEventListener('fetch', (e)=>{
-  if(e.request.method!=='GET') return;
-  e.respondWith((async ()=>{
-    const cached = await caches.match(e.request);
-    try{
-      const fresh = await fetch(e.request);
-      const c = await caches.open(CACHE);
-      c.put(e.request, fresh.clone());
-      return fresh;
-    }catch{
-      return cached || Response.error();
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#0ea5e9">
+  <link rel="manifest" href="./manifest.webmanifest?v=3">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <title>FamilyBoard – PWA (fixelt naptár + userlista)</title>
+  <style>
+    :root{
+      --primary:#0ea5e9; --bg:#f6f8fb; --card:#fff; --text:#222; --muted:#6b7280; --border:#e5e7eb;
+      --inset-top: env(safe-area-inset-top, 0px);
+      --inset-right: env(safe-area-inset-right, 0px);
+      --inset-bottom: env(safe-area-inset-bottom, 0px);
+      --inset-left: env(safe-area-inset-left, 0px);
     }
-  })());
-});
+    html, body{
+      width:100%; max-width:100%; overflow-x:hidden; margin:0; padding:0;
+      -webkit-text-size-adjust:100%; box-sizing:border-box; background:var(--bg); color:var(--text);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: inherit; }
+    body{
+      min-height:100dvh;
+      padding-left: calc(8px + var(--inset-left));
+      padding-right: calc(8px + var(--inset-right));
+      touch-action: manipulation; -webkit-overflow-scrolling: touch;
+    }
+    header{
+      position:sticky; top:0; z-index:10;
+      background:var(--primary); color:#fff;
+      padding: calc(8px + var(--inset-top)) 12px 8px 12px;
+      margin-left: calc(-8px - var(--inset-left));
+      margin-right: calc(-8px - var(--inset-right));
+      text-align:center; font-size:18px; font-weight:700;
+    }
+    main{ width:100%; max-width: 1000px; margin: 14px auto; display:grid; gap:12px; grid-template-columns:1fr; }
+    @media (min-width:1000px){ main{ grid-template-columns: 1.2fr 1fr; } }
+    .card{ background:var(--card); border:1px solid var(--border); border-radius:14px; padding:12px;
+           box-shadow:0 6px 24px rgba(0,0,0,.05); overflow:hidden; }
+    h2{margin:0 0 8px; font-size:17px}
+    .muted{color:var(--muted)}
+    .row{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+    .right{margin-left:auto}
+    button{ cursor:pointer; border:none; background:var(--primary); color:#fff; padding:10px 12px; border-radius:10px; font-weight:600; font-size:16px }
+    button.ghost{ background:transparent; color:var(--primary); border:1px solid var(--primary) }
+    input[type="text"], input[type="password"], input[type="time"], input[type="number"]{
+      padding:12px; border-radius:10px; border:1px solid var(--border); font-size:16px; min-width:0;
+    }
+    input[type="text"], input[type="password"]{flex:1}
+    ul{list-style:none; margin:8px 0 0; padding:0}
+    li.item{ display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--border); padding:8px 4px; min-width:0 }
+    li.item:last-child{border-bottom:none}
+    li.item.done span.txt{ text-decoration: line-through; color:#9ca3af }
+    .txt{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1}
+    .badge-time{ font-size:12px; background:#0ea5e91a; color:#0369a1; border:1px solid #bae6fd; padding:3px 8px; border-radius:999px; flex:0 0 auto }
+    .pill{font-size:12px; padding:2px 8px; border-radius:999px; background:#eef2ff; color:#3730a3; border:1px solid #c7d2fe}
+    .cal-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px}
+    .cal-head h3{margin:0; font-size:16px}
+    .cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:4px}
+    .dow{font-size:12px; text-align:center; color:#6b7280; padding:6px 0}
+    .day{
+      position:relative; background:#fff; border:1px solid var(--border); border-radius:10px;
+      padding:10px; text-align:right; min-height:52px; font-weight:600; color:#111; overflow:hidden;
+      user-select:none; cursor:pointer;
+    }
+    .day.out{color:#bbb; background:#fafafa}
+    .day.selected{outline:2px solid var(--primary); box-shadow:0 0 0 3px rgba(14,165,233,.15)}
+    .count{position:absolute; left:6px; top:6px; font-size:11px; color:#fff; background:var(--primary); padding:2px 6px; border-radius:999px}
+    .footer-pad{ height: calc(8px + var(--inset-bottom)); margin-left: calc(-8px - var(--inset-left)); margin-right: calc(-8px - var(--inset-right)); }
+    .center{ max-width:520px; width:92vw; margin:28px auto; }
+    .sep{height:1px; background:var(--border); margin:8px 0}
+  </style>
+</head>
+<body>
+  <header>📱 FamilyBoard – teljes PWA (v3)</header>
+
+  <!-- első indítás: admin -->
+  <div id="setup" class="center card" hidden>
+    <h2>Első lépés: Admin fiók</h2>
+    <div class="row" style="margin-top:8px">
+      <input id="suName" type="text" placeholder="Admin felhasználónév" />
+      <input id="suPass" type="password" placeholder="Jelszó" />
+      <button id="createAdmin">Létrehozás</button>
+    </div>
+    <p class="muted">Minden adat helyben (localStorage). Később tehetünk rá Firebase szinkront.</p>
+  </div>
+
+  <!-- login -->
+  <div id="login" class="center card" hidden>
+    <h2>Bejelentkezés</h2>
+    <div class="row" style="margin-top:8px">
+      <input id="liName" type="text" placeholder="Felhasználónév" />
+      <input id="liPass" type="password" placeholder="Jelszó" />
+      <button id="doLogin">Belépés</button>
+    </div>
+  </div>
+
+  <!-- app -->
+  <div id="app" hidden>
+    <div class="center card" style="margin-bottom:0">
+      <div class="row">
+        <div>Bejelentkezve: <strong id="who"></strong> <span id="roleBadge" class="pill"></span></div>
+        <button id="notifyPerm" class="ghost right">Értesítések engedélyezése</button>
+        <button id="changePass" class="ghost">Jelszó módosítása</button>
+        <button id="logout" class="ghost">Kijelentkezés</button>
+      </div>
+    </div>
+
+    <main>
+      <section>
+        <div class="card">
+          <div class="cal-head">
+            <button id="prev" class="ghost">◀</button>
+            <h3 id="monthLabel">—</h3>
+            <button id="next" class="ghost">▶</button>
+          </div>
+          <div class="cal-grid" id="calGrid"></div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <h2>Teendők – <span id="dateOut" class="muted">-</span></h2>
+          <div class="row" style="margin-bottom:8px; flex-wrap:wrap">
+            <input type="text" id="taskInput" placeholder="Új teendő..." />
+            <input type="time" id="taskTime" aria-label="Időpont (óra:perc)" />
+            <button id="addTask">Hozzáadás</button>
+          </div>
+          <div class="row" style="margin:8px 0">
+            <label for="leadMins">Értesítés előre (perc):</label>
+            <input type="number" id="leadMins" min="0" max="120" value="10" style="width:90px">
+          </div>
+          <ul id="taskList"></ul>
+          <div class="row" style="margin-top:8px">
+            <span class="muted">Idő szerinti rendezés • üres idő = lista vége</span>
+            <button id="clearDone" class="ghost right">Kész teendők törlése</button>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="card">
+          <h2>🛒 Bevásárlólista</h2>
+          <div class="row" style="margin-bottom:8px">
+            <input type="text" id="shopInput" placeholder="Új tétel..." />
+            <button id="addItem">Hozzáadás</button>
+          </div>
+          <ul id="shopList"></ul>
+          <p class="muted">Törléshez PIN szükséges (2025).</p>
+        </div>
+
+        <div id="userAdmin" class="card" hidden>
+          <h2>👤 Felhasználók (admin)</h2>
+          <div class="row" style="margin-bottom:8px">
+            <input id="newUser" type="text" placeholder="Új felhasználónév" />
+            <input id="newPass" type="password" placeholder="Ideiglenes jelszó" />
+            <select id="newRole">
+              <option value="user">user</option>
+              <option value="admin">admin</option>
+            </select>
+            <button id="addUser">Hozzáadás</button>
+          </div>
+          <div class="sep"></div>
+          <ul id="userList"></ul>
+          <p class="muted">Jelszó reset / törlés PIN-nel (2025). Utolsó admin nem törölhető.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="footer-pad"></div>
+
+  <script>
+    /* ===== Helpers ===== */
+    const $ = s => document.querySelector(s);
+    const pad = n => String(n).padStart(2,"0");
+    const ymdOf = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    const today = () => ymdOf(new Date());
+    const DOW = ['H','K','Sze','Cs','P','Szo','V'];
+    const PIN = "2025";
+    const requirePin = (msg="PIN szükséges a művelethez") => prompt(msg) === PIN;
+    const load = (k,f)=>{ try{return JSON.parse(localStorage.getItem(k)) ?? f}catch{return f} };
+    const save = (k,v)=> localStorage.setItem(k, JSON.stringify(v));
+    const uuid = ()=> crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2);
+    const validTime = t => /^([01]\\d|2[0-3]):[0-5]\\d$/.test(t);
+    async function sha256(str){ const enc=new TextEncoder().encode(str); const buf=await crypto.subtle.digest('SHA-256', enc); return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join(''); }
+
+    /* ===== Users & session ===== */
+    let users = load('fb_users_v1', []);
+    let session = load('fb_session', null);
+    const setup = $('#setup'), login = $('#login'), app = $('#app');
+    function show(view){ setup.hidden = view!=="setup"; login.hidden = view!=="login"; app.hidden = view!=="app"; }
+
+    async function bootAuth(){
+      if (!users.length){ show('setup'); return; }
+      if (!session){ show('login'); return; }
+      $('#who').textContent = session.username;
+      $('#roleBadge').textContent = session.role;
+      $('#userAdmin').hidden = session.role!=='admin';
+      show('app');
+      initApp();
+    }
+
+    $('#createAdmin').onclick = async ()=>{
+      const name=$('#suName').value.trim(); const pass=$('#suPass').value;
+      if(!name||!pass) return alert('Felhasználónév és jelszó kell.');
+      const u={id:uuid(), username:name, passHash:await sha256(pass), role:'admin'};
+      users=[u]; save('fb_users_v1', users);
+      session={id:u.id, username:u.username, role:u.role}; save('fb_session', session);
+      $('#who').textContent=session.username; $('#roleBadge').textContent=session.role; $('#userAdmin').hidden=false;
+      show('app'); initApp();
+    };
+
+    $('#doLogin').onclick = async ()=>{
+      const name=$('#liName').value.trim(); const pass=$('#liPass').value;
+      const u=users.find(x=>x.username===name); if(!u) return alert('Nincs ilyen felhasználó.');
+      const h=await sha256(pass); if(h!==u.passHash) return alert('Hibás jelszó.');
+      session={id:u.id, username:u.username, role:u.role}; save('fb_session', session);
+      $('#who').textContent=session.username; $('#roleBadge').textContent=session.role; $('#userAdmin').hidden=session.role!=='admin';
+      show('app'); initApp();
+    };
+
+    $('#logout').onclick=()=>{ session=null; save('fb_session', null); show('login'); };
+    $('#changePass').onclick=async ()=>{
+      const oldp=prompt('Régi jelszó:'); if(oldp===null) return;
+      const me=users.find(u=>u.id===session.id); if(!me) return;
+      const oh=await sha256(oldp); if(oh!==me.passHash) return alert('Hibás régi jelszó.');
+      const np=prompt('Új jelszó:'); if(np===null || !np.length) return;
+      me.passHash=await sha256(np); save('fb_users_v1', users); alert('Jelszó módosítva.');
+    };
+
+    $('#addUser').onclick=async ()=>{
+      if(session?.role!=='admin') return;
+      const name=$('#newUser').value.trim(); const pass=$('#newPass').value; const role=$('#newRole').value;
+      if(!name||!pass) return alert('Felhasználónév és jelszó kell.');
+      if(users.some(u=>u.username===name)) return alert('Már létezik.');
+      users.push({id:uuid(), username:name, passHash:await sha256(pass), role});
+      save('fb_users_v1', users); $('#newUser').value=''; $('#newPass').value=''; renderUserList();
+    };
+
+    /* >>> JAVÍTOTT: felhasználólista render */
+    function renderUserList(){
+      const panel = document.getElementById('userAdmin');
+      panel.hidden = session?.role !== 'admin';
+
+      const ul = document.getElementById('userList');
+      if (!ul) return;
+      ul.innerHTML = '';
+
+      const adminCount = users.filter(u => u.role === 'admin').length;
+
+      for (const u of users){
+        const li = document.createElement('li'); li.className = 'item';
+
+        const name = document.createElement('span'); name.textContent = u.username;
+        const role = document.createElement('span'); role.className = 'pill'; role.textContent = u.role;
+
+        const right = document.createElement('span'); right.className = 'right';
+
+        const reset = document.createElement('button'); reset.className = 'ghost'; reset.textContent = 'Jelszó reset';
+        reset.onclick = async () => {
+          if (session?.role !== 'admin') return;
+          if (prompt('PIN a jelszó resethez:') !== '2025') return;
+          const np = prompt(`Új jelszó: ${u.username}`); if (!np) return;
+          u.passHash = await sha256(np);
+          save('fb_users_v1', users);
+          alert('Jelszó frissítve.');
+        };
+
+        const del = document.createElement('button'); del.className = 'ghost'; del.textContent = 'Törlés';
+        del.onclick = () => {
+          if (session?.role !== 'admin') return;
+          if (u.id === session.id) { alert('Saját fiókot nem törölhetsz.'); return; }
+          if (u.role === 'admin' && adminCount <= 1) { alert('Az utolsó admin nem törölhető.'); return; }
+          if (prompt('PIN a felhasználó törléséhez:') !== '2025') return;
+          users = users.filter(x => x.id !== u.id);
+          save('fb_users_v1', users);
+          renderUserList();
+        };
+
+        li.append(name, role, right, reset, del);
+        ul.appendChild(li);
+      }
+    }
+
+    /* ===== Data (tasks + shopping) ===== */
+    let tasksByDate = load('fb_tasks_v2', {});
+    let shopping    = load('fb_shopping', []);
+    let selected = today();
+    let viewMonth = selected.slice(0,7)+'-01';
+
+    const calGrid = $('#calGrid'), monthLabel=$('#monthLabel');
+    const list=$('#taskList'), ti=$('#taskInput'), tt=$('#taskTime'), addTask=$('#addTask'), dateOut=$('#dateOut'), clearDoneBtn=$('#clearDone');
+    const shopInput=$('#shopInput'), addItem=$('#addItem'), shopList=$('#shopList');
+    const leadInput=$('#leadMins'), permBtn=$('#notifyPerm');
+
+    function timeToMinutes(t){ if(!t||!validTime(t)) return 1e9; const [h,m]=t.split(':').map(Number); return h*60+m; }
+
+    function moveMonth(offset){
+      const [y,m]=viewMonth.split('-').map(Number);
+      const d=new Date(y,m-1+offset,1);
+      viewMonth = ymdOf(new Date(d.getFullYear(), d.getMonth(), 1));
+      renderCalendar();
+    }
+    $('#prev').onclick = ()=> moveMonth(-1);
+    $('#next').onclick = ()=> moveMonth(1);
+
+    function renderCalendar(){
+      calGrid.innerHTML='';
+      DOW.forEach(d=>{const el=document.createElement('div');el.className='dow';el.textContent=d;calGrid.appendChild(el);});
+      const [y,m]=viewMonth.split('-').map(Number);
+      const first=new Date(y,m-1,1);
+      monthLabel.textContent=`${y}. ${first.toLocaleString('hu-HU',{month:'long'})}`;
+      const start=new Date(first);
+      const shift=(start.getDay()+6)%7; start.setDate(start.getDate()-shift);
+      for(let i=0;i<42;i++){
+        const d=new Date(start); d.setDate(start.getDate()+i);
+        const ymd=ymdOf(d);
+        const cell=document.createElement('div'); // nap cella DIV
+        cell.className='day';
+        cell.textContent=d.getDate();
+        if(d.getMonth()!==first.getMonth())cell.classList.add('out');
+        if(ymd===selected)cell.classList.add('selected');
+        const arr=(tasksByDate[ymd]||[]);
+        if(arr.length){
+          const pending = arr.filter(x=>!x.done).length;
+          const c=document.createElement('div');
+          c.className='count'; c.textContent = pending===0 ? '✓' : pending;
+          cell.appendChild(c);
+        }
+        cell.onclick=()=>{selected=ymd; renderCalendar(); renderTasks();};
+        calGrid.appendChild(cell);
+      }
+    }
+
+    function renderTasks(){
+      dateOut.textContent=selected;
+      const arr=(tasksByDate[selected]||[]).slice().sort((a,b)=> timeToMinutes(a.time)-timeToMinutes(b.time));
+      list.innerHTML='';
+      if(!arr.length){
+        const p=document.createElement('p'); p.textContent='Nincs teendő.'; p.className='muted'; list.appendChild(p); return;
+      }
+      for(const t of arr){
+        const li=document.createElement('li'); li.className='item'+(t.done?' done':'');
+        const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=t.done; cb.onchange=()=>{ t.done=!t.done; commitTask(t); };
+        const time=document.createElement('span'); time.className='badge-time'; time.textContent = t.time ? `🕒 ${t.time}` : '—';
+        const edit=document.createElement('button'); edit.textContent='✏️'; edit.className='ghost';
+        edit.onclick=()=>{
+          const nv=prompt('Idő (HH:MM, üres = nincs)', t.time || '');
+          if(nv===null) return; if(nv!=='' && !validTime(nv)) return alert('Érvénytelen idő.');
+          t.time=nv; commitTask(t);
+        };
+        const txt=document.createElement('span'); txt.className='txt'; txt.textContent=t.text;
+        const right=document.createElement('span'); right.className='right';
+        const del=document.createElement('button'); del.className='ghost'; del.textContent='🗑️';
+        del.onclick=()=>{ if(!requirePin()) return; removeTask(t.id); };
+        li.append(cb, time, edit, txt, right, del);
+        list.appendChild(li);
+      }
+    }
+    function commitTask(task){ const arr=tasksByDate[selected]||[]; const i=arr.findIndex(x=>x.id===task.id); if(i>-1) arr[i]=task; save('fb_tasks_v2', tasksByDate); renderTasks(); renderCalendar(); }
+    function removeTask(id){ const arr=tasksByDate[selected]||[]; const i=arr.findIndex(x=>x.id===id); if(i>-1) arr.splice(i,1); save('fb_tasks_v2', tasksByDate); renderTasks(); renderCalendar(); }
+    addTask.onclick=()=>{
+      const text=ti.value.trim(); let time=tt.value.trim();
+      if(!text) return; if(time && !validTime(time)) return alert('Érvénytelen idő (HH:MM)');
+      const arr=tasksByDate[selected]||(tasksByDate[selected]=[]);
+      arr.push({id:uuid(), text, done:false, time: time||""});
+      ti.value=''; tt.value='';
+      save('fb_tasks_v2', tasksByDate);
+      renderTasks(); renderCalendar();
+    };
+    ti.onkeydown=e=>{ if(e.key==='Enter') addTask.click(); };
+    tt.onkeydown=e=>{ if(e.key==='Enter') addTask.click(); };
+    clearDoneBtn.onclick=()=>{
+      if(!requirePin()) return;
+      const arr=tasksByDate[selected]||[];
+      tasksByDate[selected]=arr.filter(t=>!t.done);
+      save('fb_tasks_v2', tasksByDate);
+      renderTasks(); renderCalendar();
+    };
+
+    function renderShopping(){
+      shopList.innerHTML='';
+      if(!shopping.length){ const p=document.createElement('p'); p.textContent='Üres bevásárlólista.'; p.className='muted'; shopList.appendChild(p); return; }
+      shopping.forEach((i,idx)=>{
+        const li=document.createElement('li'); li.className='item'+(i.done?' done':'');
+        const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=i.done;
+        cb.onchange=()=>{ i.done=!i.done; save('fb_shopping',shopping); renderShopping(); };
+        const txt=document.createElement('span'); txt.className='txt'; txt.textContent=i.text;
+        const del=document.createElement('button'); del.textContent='🗑️'; del.className='ghost';
+        del.onclick=()=>{ if(!requirePin()) return; shopping.splice(idx,1); save('fb_shopping',shopping); renderShopping(); };
+        li.append(cb, txt, del); shopList.appendChild(li);
+      });
+    }
+    addItem.onclick=()=>{ const text=shopInput.value.trim(); if(!text) return; shopping.push({id:uuid(), text, done:false}); shopInput.value=''; save('fb_shopping',shopping); renderShopping(); };
+
+    /* ===== In-tab reminders ===== */
+    $('#notifyPerm').onclick = async ()=>{
+      if(!('Notification' in window)) return alert('A böngésződ nem támogatja az értesítéseket.');
+      if(Notification.permission==='granted') return alert('Már engedélyezve.');
+      const res = await Notification.requestPermission(); if(res!=='granted') alert('Értesítések letiltva.');
+    };
+
+    /* ===== SW regisztráció (verziózva) ===== */
+    if('serviceWorker' in navigator){
+      window.addEventListener('load', ()=>{
+        navigator.serviceWorker.register('./sw.js?v=3').catch(()=>{});
+      });
+    }
+
+    function initApp(){ renderCalendar(); renderTasks(); renderShopping(); renderUserList(); }
+
+    // boot
+    bootAuth();
+  </script>
+</body>
+</html>
