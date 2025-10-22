@@ -1,17 +1,16 @@
-const CACHE = 'familyboard-v3';
+const CACHE = 'familyboard-v4';
 const ASSETS = [
   './',
-  './index.html?v=3',
-  './manifest.webmanifest?v=3',
+  './index.html?v=4',
+  './manifest.webmanifest?v=4',
   './icons/icon-192.png',
   './icons/icon-512.png'
 ];
-
 self.addEventListener('install', (e)=>{
   e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)));
   self.skipWaiting();
 });
-self.addEventListener('activate', async (e)=>{
+self.addEventListener('activate', (e)=>{
   e.waitUntil((async ()=>{
     const keys = await caches.keys();
     await Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)));
