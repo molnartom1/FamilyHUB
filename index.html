@@ -242,32 +242,55 @@
     };
 
     function renderUserList(){
-      const ul=$('#userList'); ul.innerHTML='';
-      const adminCount=users.filter(u=>u.role==='admin').length;
-      for(const u of users){
-        const li=document.createElement('li'); li.className='item';
-        const name=document.createElement('span'); name.textContent=u.username;
-        const role=document.createElement('span'); role.className='pill'; role.textContent=u.role;
-        const right=document.createElement('span'); right.className='right';
-        const reset=document.createElement('button'); reset.className='ghost'; reset.textContent='Jelszó reset';
-        reset.onclick=async ()=>{
-          if(session?.role!=='admin') return;
-          if(!requirePin('PIN a jelszó resethez:')) return;
-          const np=prompt('Új jelszó:'); if(np===null||!np.length) return;
-          u.passHash=await sha256(np); save('fb_users_v1', users); alert('Jelszó frissítve.');
-        };
-        const del=document.createElement('button'); del.className='ghost'; del.textContent='Törlés';
-        del.onclick=()=>{
-          if(session?.role!=='admin') return;
-          if(u.id===session.id) return alert('Saját fiókot nem törölhetsz.');
-          const ac=users.filter(x=>x.role==='admin').length;
-          if(u.role==='admin' && ac<=1) return alert('Az utolsó admin nem törölhető.');
-          if(!requirePin('PIN a felhasználó törléséhez:')) return;
-          users=users.filter(x=>x.id!==u.id); save('fb_users_v1', users); renderUserList();
-        };
-        li.append(name, role, right, reset, del); ul.appendChild(li);
-      }
+    const panel = document.getElementById('userAdmin');
+    panel.hidden = session?.role !== 'admin';
+
+    const ul = document.getElementById('userList');
+    if (!ul) return;
+    ul.innerHTML = '';
+
+    const adminCount = users.filter(u => u.role === 'admin').length;
+
+    for (const u of users){
+      const li = document.createElement('li'); li.className = 'item';
+
+      const name = document.createElement('span'); name.textContent = u.username;
+      const role = document.createElement('span'); role.className = 'pill'; role.textContent = u.role;
+
+      const right = document.createElement('span'); right.className = 'right';
+
+      const reset = document.createElement('button'); reset.className = 'ghost'; reset.textContent = 'Jelszó reset';
+      reset.onclick = async () => {
+        if (session?.role !== 'admin') return;
+        if (prompt('PIN a jelszó resethez:') !== '2025') return;
+        const np = prompt(`Új jelszó: ${u.username}`); if (!np) return;
+        u.passHash = await sha256(np);
+        save('fb_users_v1', users);
+        alert('Jelszó frissítve.');
+      };
+
+      const del = document.createElement('button'); del.className = 'ghost'; del.textContent = 'Törlés';
+      del.onclick = () => {
+        if (session?.role !== 'admin') return;
+        if (u.id === session.id) { alert('Saját fiókot nem törölhetsz.'); return; }
+        if (u.role === 'admin' && adminCount <= 1) { alert('Az utolsó admin nem törölhető.'); return; }
+        if (prompt('PIN a felhasználó törléséhez:') !== '2025') return;
+        users = users.filter(x => x.id !== u.id);
+        save('fb_users_v1', users);
+        renderUserList();
+      };
+
+      li.append(name, role, right, reset, del);
+      ul.appendChild(li);
     }
+  }
+
+  // biztos, ami biztos: hívd meg belépés/indítás után
+  function initApp(){
+    renderCalendar(); renderTasks(); renderShopping();
+    renderUserList(); // <-- ez legyen itt
+  }
+</script>
 
     /* ===== Data (tasks + shopping) ===== */
     let tasksByDate = load('fb_tasks_v2', {});
