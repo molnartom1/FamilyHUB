@@ -224,7 +224,7 @@
 
     addTask.onclick=async()=>{
       const text=ti.value.trim(); let time=tt.value.trim();
-      if(!text) return; if(time && !validTime(time)) return alert('Érvénytelen idő (HH:MM)');
+      if(time !== "" && !validTime(time)) return alert('Érvénytelen idő (HH:MM)');
       await addDoc(collection(db,`households/${householdId}/tasks`), { text, time: time||"", done:false, date:selected, createdAt: Date.now() });
       ti.value=''; tt.value='';
     };
