@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#0ea5e9">
-  <title>FamilyBoard v11c2</title>
-  <link rel="manifest" href="./manifest.webmanifest?v=11c2">
+  <title>FamilyBoard v11d</title>
+  <link rel="manifest" href="./manifest.webmanifest?v=11d">
   <style>
     :root{--primary:#0ea5e9;--bg:#f6f8fb;--card:#fff;--text:#222;--muted:#6b7280;--border:#e5e7eb;}
     *{box-sizing:border-box}
@@ -30,9 +30,12 @@
     .cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
     .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
     .dow{text-align:center;color:#6b7280;font-size:12px;padding:6px 0;}
-    .day{padding:10px;border-radius:10px;background:#fff;border:1px solid var(--border);text-align:right;cursor:pointer;user-select:none}
+    .day{padding:8px 8px 10px;border-radius:10px;background:#fff;border:1px solid var(--border);text-align:right;cursor:pointer;user-select:none;display:flex;flex-direction:column;align-items:flex-end;min-height:48px}
     .day.out{background:#f1f1f1;color:#bbb;}
     .day.selected{outline:2px solid var(--primary);}
+    .dots{display:flex;gap:4px;align-self:center;margin-top:6px;min-height:8px}
+    .dot{width:6px;height:6px;border-radius:50%;background:var(--primary)}
+    .dot.more{width:auto;height:auto;border-radius:6px;padding:0 4px;font-size:10px;line-height:14px;background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd}
     .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
     .small{font-size:13px}
   </style>
@@ -144,6 +147,28 @@
   let cm=current.getMonth(), cy=current.getFullYear();
   let selectedYMD = ymd(current);
 
+  // Aggregált számlálók (dátum -> count) a pöttyökhöz
+  let taskCounts = new Map();
+  let unsubTaskCounts = null;
+
+  function subscribeTaskCounts(){
+    // Egyszerű: az egész tasks kollekcióra hallgatunk és kliensen aggregálunk.
+    // Családi használatra bőven elég, nem kell index.
+    if (unsubTaskCounts) unsubTaskCounts();
+    unsubTaskCounts = onSnapshot(collection(db, `households/${householdId}/tasks`), snap=>{
+      const counts = new Map();
+      snap.forEach(d=>{
+        const data = d.data();
+        const dt = data.date;
+        if (!dt) return;
+        counts.set(dt, (counts.get(dt)||0) + 1);
+      });
+      taskCounts = counts;
+      // a naptár újrarajzolása, hogy a pöttyök azonnal frissüljenek
+      renderCalendar();
+    });
+  }
+
   function renderCalendar(){
     calGrid.innerHTML="";
     const f=new Date(cy,cm,1);
@@ -163,6 +188,27 @@
       const thisYMD=ymd(dateObj);
       el.className="day" + (thisYMD===selectedYMD ? " selected":"");
       el.textContent=d;
+
+      // pöttyök: teendő számláló az adott napra
+      const c = taskCounts.get(thisYMD) || 0;
+      const dots = document.createElement("div");
+      dots.className = "dots";
+      if (c>0){
+        const shown = Math.min(3, c);
+        for(let i=0;i<shown;i++){
+          const dot = document.createElement("span");
+          dot.className = "dot";
+          dots.appendChild(dot);
+        }
+        if (c>3){
+          const more = document.createElement("span");
+          more.className = "dot more";
+          more.textContent = `+${c-3}`;
+          dots.appendChild(more);
+        }
+      }
+      el.appendChild(dots);
+
       el.onclick=()=>{ selectedYMD=thisYMD; renderCalendar(); updateTaskDate(); subscribeTasks(); };
       calGrid.appendChild(el);
     }
@@ -179,7 +225,7 @@
   const taskList=document.getElementById("taskList");
   let unsubTasks=null;
 
-  function minutes(t){
+  const minutes = (t)=>{
     if(!t || !validTime(t)) return 1e9; // üres/hibás → lista vége
     const [h,m] = t.split(":").map(Number);
     return h*60 + m;
@@ -307,17 +353,10 @@
     });
   }
 
-  addItem.onclick=async()=>{
-    const text=shopInput.value.trim(); if(!text) return;
-    await addDoc(collection(db,`households/${householdId}/shopping`),{
-      text, done:false, createdAt:Date.now()
-    });
-    shopInput.value="";
-  };
-
   function boot(){
     selectedYMD = ymd(new Date());
     updateTaskDate();
+    subscribeTaskCounts();  // ← pöttyök számláló hallgató
     renderCalendar();
     subscribeTasks();
     subscribeShopping();
@@ -326,9 +365,7 @@
 
 <script>
 if('serviceWorker' in navigator){
-  // Ha még nem frissítetted a sw.js-t v11c2-re, ez akkor is működni fog,
-  // csak a régi SW marad aktív. Frissítéskor érdemes a sw.js-ben is v11c2-re váltani.
-  navigator.serviceWorker.register('./sw.js?v=11c2');
+  navigator.serviceWorker.register('./sw.js?v=11d');
 }
 </script>
 
