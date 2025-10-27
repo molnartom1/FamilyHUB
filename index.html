@@ -6,9 +6,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#0ea5e9">
-  <link rel="manifest" href="./manifest.webmanifest?v=6">
+  <link rel="manifest" href="./manifest.webmanifest?v=7">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <title>FamilyBoard – PIN & Firebase Sync (v6)</title>
+  <title>FamilyBoard – PIN & Firebase Sync (v7)</title>
   <style>
     :root{--primary:#0ea5e9;--bg:#f6f8fb;--card:#fff;--text:#222;--muted:#6b7280;--border:#e5e7eb;
       --inset-top:env(safe-area-inset-top,0px);--inset-right:env(safe-area-inset-right,0px);
@@ -45,7 +45,7 @@
   </style>
 </head>
 <body>
-  <header>🔐 FamilyBoard – PIN & Firebase Sync (v6)</header>
+  <header>🔐 FamilyBoard – PIN & Firebase Sync (v7)</header>
 
   <div id="gate" class="center card">
     <h2>Csatlakozás a családi táblához</h2>
@@ -222,17 +222,18 @@
       }
     }
 
-    // *** FIX: csak akkor validáljuk az időt, ha ténylegesen van megadva ***
-   addTask.onclick = async () => {
-  const text = ti.value.trim(); 
-  let time = tt.value.trim();
-  if (!text) return;
-  if (time !== "" && !validTime(time)) return alert('Érvénytelen idő (HH:MM)');
-  await addDoc(collection(db,`households/${householdId}/tasks`), {
-    text, time: time || "", done:false, date:selected, createdAt: Date.now()
-  });
-  ti.value = ''; tt.value = '';
-};
+    // *** EXTRA SAFE FIX: normalize time and validate only if real value ***
+    addTask.onclick=async()=>{
+      const text=ti.value.trim();
+      let raw = tt.value;
+      let time = (raw ?? '').toString().trim();
+      // iOS/Safari eset: néha "--:--" vagy " " -> üresnek tekintjük
+      if (time === "--:--" || time.replace(/[-_: ]/g,"") === "") time = "";
+      if (!text) return;
+      if (time !== "" && !validTime(time)) return alert('Érvénytelen idő (HH:MM)');
+      await addDoc(collection(db,`households/${householdId}/tasks`), { text, time: time || "", done:false, date:selected, createdAt: Date.now() });
+      ti.value=''; tt.value='';
+    };
 
     function subscribeShopping(){
       if(unsubShopping) unsubShopping();
@@ -277,7 +278,7 @@
 
     // SW
     if('serviceWorker' in navigator){
-      window.addEventListener('load', ()=> navigator.serviceWorker.register('./sw.js?v=6').catch(()=>{}));
+      window.addEventListener('load', ()=> navigator.serviceWorker.register('./sw.js?v=7').catch(()=>{}));
     }
   </script>
 </body>

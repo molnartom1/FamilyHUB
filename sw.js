@@ -1,8 +1,8 @@
-const CACHE = 'familyboard-v6';
+const CACHE = 'familyboard-v7';
 const ASSETS = [
   './',
-  './index.html?v=6',
-  './manifest.webmanifest?v=6',
+  './index.html?v=7',
+  './manifest.webmanifest?v=7',
   './icons/icon-192.png',
   './icons/icon-512.png'
 ];
