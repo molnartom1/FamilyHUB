@@ -141,7 +141,8 @@
       if(pin===null || pin===""){ gateMsg.textContent="Sikertelen csatlakozás: nem adtál meg PIN-t."; return; }
       const pinHash = await sha256(pin);
       try{
-        await setDoc(memberRef, { pinHash }); // rules ellenőrzi a secrets/config pinHash-hez képest
+        await setDoc(memberRef, { pinHash }); 
+boot();// rules ellenőrzi a secrets/config pinHash-hez képest
         boot();
       }catch(e){
         gateMsg.textContent = "Hibás PIN vagy nincs beállítva. ("+e.message+")";
