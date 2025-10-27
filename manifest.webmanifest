@@ -1,8 +1,8 @@
 {
   "name": "FamilyBoard",
   "short_name": "FamilyBoard",
-  "start_url": "./?v=9",
+  "start_url": "./?v=10",
   "display": "standalone",
-  "background_color": "#0ea5e9",
-  "theme_color": "#0ea5e9"
+  "theme_color": "#0ea5e9",
+  "background_color": "#0ea5e9"
 }
