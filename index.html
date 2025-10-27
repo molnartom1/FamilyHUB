@@ -75,9 +75,6 @@
         <div class="card" style="margin-top:12px">
           <h2>Teendők – <span id="dateOut" class="muted">-</span></h2>
           <div class="row" style="margin-bottom:8px;flex-wrap:wrap">
-            <input type="text" id="taskInput" placeholder="Új teendő..." />
-            <input type="time" id="taskTime" aria-label="Időpont (óra:perc)" />
-            <button id="addTask">Hozzáadás</button>
           </div>
           <ul id="taskList"></ul>
         </div>
@@ -223,7 +220,6 @@
     }
 
     // *** EXTRA SAFE FIX: normalize time and validate only if real value ***
-    addTask.onclick=async()=>{
       const text=ti.value.trim();
       let raw = tt.value;
       let time = (raw ?? '').toString().trim();
@@ -231,7 +227,6 @@
       if (time === "--:--" || time.replace(/[-_: ]/g,"") === "") time = "";
       if (!text) return;
       if (time !== "" && !validTime(time)) return alert('Érvénytelen idő (HH:MM)');
-      await addDoc(collection(db,`households/${householdId}/tasks`), { text, time: time || "", done:false, date:selected, createdAt: Date.now() });
       ti.value=''; tt.value='';
     };
 
