@@ -1,8 +1,8 @@
-const CACHE = 'familyboard-v11b';
+const CACHE = 'familyboard-v11c';
 const ASSETS = [
   './',
-  './index.html?v=11b',
-  './manifest.webmanifest?v=11b'
+  './index.html?v=11c',
+  './manifest.webmanifest?v=11c'
 ];
 
 self.addEventListener('install', (e)=>{
