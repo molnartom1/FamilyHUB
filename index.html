@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#0ea5e9">
-  <title>FamilyBoard v11d-fix</title>
-  <link rel="manifest" href="./manifest.webmanifest?v=11d-fix">
+  <title>FamilyBoard v11c2</title>
+  <link rel="manifest" href="./manifest.webmanifest?v=11c2">
   <style>
     :root{--primary:#0ea5e9;--bg:#f6f8fb;--card:#fff;--text:#222;--muted:#6b7280;--border:#e5e7eb;}
     *{box-sizing:border-box}
@@ -20,24 +20,21 @@
     li:last-child{border-bottom:none}
     li input[type="checkbox"]{transform:scale(1.2);cursor:pointer}
     li span.text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .badge-time{font-size:12px;background:#0ea5e91a;color:#0369a1;border:1px solid #bae6fd;padding:3px 8px;border-radius:999px;cursor:pointer}
+    .badge-time{font-size:12px;background:#0ea5e91a;color:#0369a1;border:1px solid #bae6fd;padding:3px 8px;border-radius:999px}
     button{border:none;border-radius:10px;padding:10px 14px;font-size:16px;background:var(--primary);color:#fff;cursor:pointer;}
     button.ghost{background:#fff;color:var(--primary);border:1px solid var(--primary);}
     input[type="text"], input[type="time"]{padding:12px;border-radius:10px;border:1px solid var(--border);font-size:16px;}
     input[type="text"]{flex:1}
     input[type="time"]{width:98px}
-    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-    .small{font-size:13px}
 
-    /* Naptár + pöttyök */
     .cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
     .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
     .dow{text-align:center;color:#6b7280;font-size:12px;padding:6px 0;}
-    .day{padding:6px 6px 10px;border-radius:10px;background:#fff;border:1px solid var(--border);text-align:right;cursor:pointer;user-select:none;display:flex;flex-direction:column;align-items:flex-end;min-height:48px;font-size:14px}
+    .day{padding:10px;border-radius:10px;background:#fff;border:1px solid var(--border);text-align:right;cursor:pointer;user-select:none}
+    .day.out{background:#f1f1f1;color:#bbb;}
     .day.selected{outline:2px solid var(--primary);}
-    .dots{display:flex;gap:3px;align-self:center;margin-top:4px;min-height:8px}
-    .dot{width:6px;height:6px;border-radius:50%;background:var(--primary)}
-    .dot.more{width:auto;height:auto;border-radius:6px;padding:0 4px;font-size:10px;line-height:14px;background:#0ea5e91a;color:#0369a1;border:1px solid #bae6fd}
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .small{font-size:13px}
   </style>
 </head>
 
@@ -139,31 +136,13 @@
     showApp(); boot();
   });
 
-  // --- UI: Naptár + teendők dátuma + pötty számláló ---
+  // --- UI: Naptár + teendők dátuma ---
   const calGrid=document.getElementById("calGrid");
   const monthLabel=document.getElementById("monthLabel");
   const taskDateEl=document.getElementById("taskDate");
   let current=new Date();
   let cm=current.getMonth(), cy=current.getFullYear();
   let selectedYMD = ymd(current);
-
-  let taskCounts = new Map();
-  let unsubTaskCounts = null;
-
-  function subscribeTaskCounts(){
-    if (unsubTaskCounts) unsubTaskCounts();
-    unsubTaskCounts = onSnapshot(collection(db, `households/${householdId}/tasks`), snap=>{
-      const counts = new Map();
-      snap.forEach(d=>{
-        const data = d.data();
-        const dt = data.date;
-        if (!dt) return;
-        counts.set(dt, (counts.get(dt)||0) + 1);
-      });
-      taskCounts = counts;
-      renderCalendar();
-    });
-  }
 
   function renderCalendar(){
     calGrid.innerHTML="";
@@ -175,7 +154,7 @@
     });
 
     const shift=(f.getDay()+6)%7;
-    for(let i=0;i<shift;i++){ const el=document.createElement("div"); el.className="day out"; calGrid.appendChild(el); }
+    for(let i=0;i<shift;i++){ const d=document.createElement("div"); d.className="day out"; calGrid.appendChild(d); }
 
     const days=new Date(cy,cm+1,0).getDate();
     for(let d=1; d<=days; d++){
@@ -184,54 +163,38 @@
       const thisYMD=ymd(dateObj);
       el.className="day" + (thisYMD===selectedYMD ? " selected":"");
       el.textContent=d;
-
-      // pöttyök
-      const c = taskCounts.get(thisYMD) || 0;
-      const dots = document.createElement("div");
-      dots.className = "dots";
-      if (c>0){
-        const shown = Math.min(3, c);
-        for(let i=0;i<shown;i++){
-          const dot = document.createElement("span");
-          dot.className = "dot";
-          dots.appendChild(dot);
-        }
-        if (c>3){
-          const more = document.createElement("span");
-          more.className = "dot more";
-          more.textContent = `+${c-3}`;
-          dots.appendChild(more);
-        }
-      }
-      el.appendChild(dots);
-
       el.onclick=()=>{ selectedYMD=thisYMD; renderCalendar(); updateTaskDate(); subscribeTasks(); };
       calGrid.appendChild(el);
     }
   }
   prev.onclick=()=>{ cm--; if(cm<0){cm=11;cy--;} renderCalendar(); };
   next.onclick=()=>{ cm++; if(cm>11){cm=0; cy++;} renderCalendar(); };
+
   function updateTaskDate(){ taskDateEl.textContent = selectedYMD; }
 
-  // --- Teendők (időponttal, index nélkül) ---
+  // --- Teendők (időponttal) ---
   const taskInput=document.getElementById("taskInput");
   const taskTime=document.getElementById("taskTime");
   const addTask=document.getElementById("addTask");
   const taskList=document.getElementById("taskList");
   let unsubTasks=null;
 
-  const minutes=t=>{
-    if(!t || !validTime(t)) return 1e9;
-    const [h,m]=t.split(":").map(Number);
-    return h*60+m;
+  function minutes(t){
+    if(!t || !validTime(t)) return 1e9; // üres/hibás → lista vége
+    const [h,m] = t.split(":").map(Number);
+    return h*60 + m;
   }
 
   function subscribeTasks(){
     if(unsubTasks) unsubTasks();
-    const qref = query(collection(db, `households/${householdId}/tasks`), where("date","==",selectedYMD));
+    const qref = query(
+      collection(db, `households/${householdId}/tasks`),
+      where("date","==",selectedYMD)   // NINCS orderBy -> NEM kell index
+    );
     unsubTasks = onSnapshot(qref, snap=>{
       const items=[];
       snap.forEach(s=>items.push({id:s.id, ...s.data()}));
+      // rendezés: nem kész felül, idő szerint, majd createdAt
       items.sort((a,b)=>{
         if(!!a.done !== !!b.done) return a.done ? 1 : -1;
         const am = minutes(a.time), bm = minutes(b.time);
@@ -246,7 +209,10 @@
     taskList.innerHTML="";
     if(!items.length){
       const li=document.createElement("li");
-      li.innerHTML="<span class='text muted'>Nincs teendő ezen a napon.</span>";
+      const span=document.createElement("span");
+      span.className="text muted";
+      span.textContent="Nincs teendő ezen a napon.";
+      li.append(span);
       taskList.append(li);
       return;
     }
@@ -255,8 +221,8 @@
       const cb=document.createElement("input");
       cb.type="checkbox"; cb.checked=!!t.done;
 
-      const timeBadge=document.createElement("span");
-      timeBadge.className="badge-time";
+      const timeBadge=document.createElement("button");
+      timeBadge.className="ghost badge-time";
       timeBadge.textContent = t.time && validTime(t.time) ? `🕒 ${t.time}` : "—";
       timeBadge.title = "Idő módosítása";
       timeBadge.onclick = async ()=>{
@@ -295,33 +261,26 @@
     taskInput.value=""; taskTime.value="";
   };
 
-  // --- Bevásárlólista (STABIL) ---
+  // --- Bevásárlólista (stabil rendezés + createdAt fallback) ---
   const shopInput=document.getElementById("shopInput");
   const addItem=document.getElementById("addItem");
   const shopList=document.getElementById("shopList");
 
   function subscribeShopping(){
-    const qref = query(collection(db,`households/${householdId}/shopping`)); // nincs orderBy -> nem kell index
-    onSnapshot(qref, snap=>{
+    const q=query(collection(db,`households/${householdId}/shopping`));
+    onSnapshot(q,snap=>{
+      shopList.innerHTML="";
       const arr=[];
       snap.forEach(d=>arr.push({id:d.id, ...d.data()}));
 
-      // Stabil rendezés: nem kész felül, utána createdAt; ha hiányzik, a végére
+      // Kliens oldali rendezés: nem kész felül, majd createdAt – hiány esetén a végére
       arr.sort((a,b)=>{
         if(!!a.done !== !!b.done) return a.done ? 1 : -1;
-        const ac = (a.createdAt ?? Number.MAX_SAFE_INTEGER);
-        const bc = (b.createdAt ?? Number.MAX_SAFE_INTEGER);
-        return ac - bc;
+        if(!a.createdAt && !b.createdAt) return 0;
+        if(!a.createdAt) return 1;
+        if(!b.createdAt) return -1;
+        return a.createdAt - b.createdAt;
       });
-
-      // Kirajzolás
-      shopList.innerHTML="";
-      if(!arr.length){
-        const li=document.createElement("li");
-        li.innerHTML="<span class='text muted'>Nincs tétel.</span>";
-        shopList.append(li);
-        return;
-      }
 
       arr.forEach(item=>{
         const li=document.createElement("li");
@@ -330,43 +289,35 @@
 
         const txt=document.createElement("span");
         txt.className="text";
-        txt.textContent=item.text || "(névtelen tétel)";
+        txt.textContent=item.text;
         if(cb.checked) txt.style.textDecoration="line-through";
 
-        cb.onchange=async()=>{
-          try{
-            await updateDoc(doc(db,`households/${householdId}/shopping/${item.id}`),{
-              done:cb.checked,
-              createdAt: item.createdAt || Date.now() // fallback, hogy legyen
-            });
-          }catch(e){
-            console.error(e); alert("Nem sikerült frissíteni a tételt.");
-          }
-        };
+        cb.onchange=()=> updateDoc(
+          doc(db,`households/${householdId}/shopping/${item.id}`),
+          {done:cb.checked, createdAt: item.createdAt || Date.now()}
+        );
 
         const del=document.createElement("button");
         del.textContent="🗑️"; del.className="ghost";
-        del.onclick=async()=>{
-          try{
-            await deleteDoc(doc(db,`households/${householdId}/shopping/${item.id}`));
-          }catch(e){
-            console.error(e); alert("Nem sikerült törölni a tételt.");
-          }
-        };
+        del.onclick=()=>deleteDoc(doc(db,`households/${householdId}/shopping/${item.id}`));
 
         li.append(cb,txt,del);
         shopList.appendChild(li);
       });
-    }, err=>{
-      console.error("onSnapshot(shopping) hiba:", err);
-      alert("Bevásárlólista olvasási hiba (ellenőrizd a Firestore-t).");
     });
   }
+
+  addItem.onclick=async()=>{
+    const text=shopInput.value.trim(); if(!text) return;
+    await addDoc(collection(db,`households/${householdId}/shopping`),{
+      text, done:false, createdAt:Date.now()
+    });
+    shopInput.value="";
+  };
 
   function boot(){
     selectedYMD = ymd(new Date());
     updateTaskDate();
-    subscribeTaskCounts();
     renderCalendar();
     subscribeTasks();
     subscribeShopping();
@@ -375,7 +326,9 @@
 
 <script>
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./sw.js?v=11d-fix');
+  // Ha még nem frissítetted a sw.js-t v11c2-re, ez akkor is működni fog,
+  // csak a régi SW marad aktív. Frissítéskor érdemes a sw.js-ben is v11c2-re váltani.
+  navigator.serviceWorker.register('./sw.js?v=11c2');
 }
 </script>
 
