@@ -5,10 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#0ea5e9">
-  <title>FamilyBoard v10</title>
-  <link rel="manifest" href="./manifest.webmanifest?v=10">
+  <title>FamilyBoard v11</title>
+  <link rel="manifest" href="./manifest.webmanifest?v=11">
   <style>
     :root{--primary:#0ea5e9;--bg:#f6f8fb;--card:#fff;--text:#222;--muted:#6b7280;--border:#e5e7eb;}
+    *{box-sizing:border-box}
     body{margin:0;background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--text);}
     header{background:var(--primary);color:#fff;text-align:center;padding:14px;font-weight:700;font-size:18px;}
     .center{max-width:520px;margin:24px auto;}
@@ -16,15 +17,21 @@
     .muted{color:var(--muted)}
     ul{list-style:none;padding:0;margin-top:12px;}
     li{display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid var(--border);}
-    li input[type="checkbox"]{transform:scale(1.3)}
-    li span{flex:1;}
+    li:last-child{border-bottom:none}
+    li input[type="checkbox"]{transform:scale(1.2);cursor:pointer}
+    li span.text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     button{border:none;border-radius:10px;padding:10px 14px;font-size:16px;background:var(--primary);color:#fff;cursor:pointer;}
     button.ghost{background:#fff;color:var(--primary);border:1px solid var(--primary);}
+    input[type="text"]{padding:12px;border-radius:10px;border:1px solid var(--border);font-size:16px;flex:1}
+
     .cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
     .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
     .dow{text-align:center;color:#6b7280;font-size:12px;padding:6px 0;}
-    .day{padding:10px;border-radius:10px;background:#fff;border:1px solid var(--border);text-align:right;cursor:pointer;}
+    .day{padding:10px;border-radius:10px;background:#fff;border:1px solid var(--border);text-align:right;cursor:pointer;user-select:none}
     .day.out{background:#f1f1f1;color:#bbb;}
+    .day.selected{outline:2px solid var(--primary);}
+    .row{display:flex;gap:8px;align-items:center}
+    .small{font-size:13px}
   </style>
 </head>
 
@@ -40,6 +47,7 @@
 
 <!-- APP -->
 <div id="app" class="center" hidden>
+  <!-- NAPTÁR -->
   <div class="card">
     <div class="cal-head">
       <button id="prev" class="ghost">◀</button>
@@ -49,9 +57,22 @@
     <div class="cal-grid" id="calGrid"></div>
   </div>
 
+  <!-- TEENDŐK (visszaépítve) -->
+  <div class="card" style="margin-top:16px">
+    <div class="row" style="justify-content:space-between">
+      <h2 style="margin:0">📋 Teendők – <span id="taskDate" class="small muted">—</span></h2>
+      <div class="row" style="flex:0 0 auto">
+        <input type="text" id="taskInput" placeholder="Új teendő…" />
+        <button id="addTask" title="Hozzáadás">+</button>
+      </div>
+    </div>
+    <ul id="taskList"></ul>
+  </div>
+
+  <!-- BEVÁSÁRLÓLISTA -->
   <div class="card" style="margin-top:16px">
     <h2>🛒 Bevásárlólista</h2>
-    <div style="display:flex;gap:8px;">
+    <div class="row">
       <input type="text" id="shopInput" placeholder="Új tétel..." />
       <button id="addItem">+</button>
     </div>
@@ -63,8 +84,12 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
   import { getAuth, onAuthStateChanged, signInAnonymously, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
-  import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, orderBy, onSnapshot, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+  import {
+    getFirestore, enableIndexedDbPersistence,
+    doc, setDoc, getDoc, collection, addDoc, query, where, orderBy, onSnapshot, deleteDoc, updateDoc
+  } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
+  // --- Firebase ---
   const firebaseConfig = {
     apiKey: "AIzaSyAeoxtOe5Cleasm3KdeSHP9WDR3PkU-N1I",
     authDomain: "mosas-nyilvantartas.firebaseapp.com",
@@ -73,54 +98,140 @@
     messagingSenderId: "38259241645",
     appId: "1:38259241645:web:26070b1d0686def9f00c24"
   };
-
   initializeApp(firebaseConfig);
   const auth = getAuth();
   const db = getFirestore();
   setPersistence(auth, browserLocalPersistence);
+  enableIndexedDbPersistence(db).catch(()=>{}); // offline-opció
 
+  // --- Állandók ---
   const PIN="2025";
   const householdId="default";
 
-  function showGate(){ gate.hidden=false; app.hidden=true; }
-  function showApp(){ gate.hidden=true; app.hidden=false; }
+  // --- Segédek ---
+  const pad=n=>String(n).padStart(2,"0");
+  const ymd=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const gate=document.getElementById("gate");
+  const app=document.getElementById("app");
+  const gateMsg=document.getElementById("gateMsg");
+  const showGate=()=>{ gate.hidden=false; app.hidden=true; };
+  const showApp =()=>{ gate.hidden=true; app.hidden=false; };
 
+  // --- Auth + PIN kapu ---
   onAuthStateChanged(auth, async(u)=>{
     if(!u){ showGate(); await signInAnonymously(auth); return; }
     const ref = doc(db,`households/${householdId}/members/${u.uid}`);
     const snap = await getDoc(ref);
-    if(snap.exists()){ showApp(); init(); return; }
+    if(snap.exists()){ showApp(); boot(); return; }
     showGate();
-    const pin=prompt("PIN:");
-    if(pin!==PIN){ document.getElementById("gateMsg").textContent="Hibás PIN!"; return; }
-    await setDoc(ref,{ok:true});
-    showApp(); init();
+    const pin=prompt("Háztartás PIN:");
+    if(pin!==PIN){ gateMsg.textContent="Hibás PIN!"; return; }
+    await setDoc(ref,{ok:true, joinedAt:Date.now()});
+    showApp(); boot();
   });
 
-  function init(){
-    renderCalendar();
-    subscribeShopping();
-  }
-
+  // --- UI: Naptár + teendők dátuma ---
   const calGrid=document.getElementById("calGrid");
   const monthLabel=document.getElementById("monthLabel");
-  let cm=new Date().getMonth(), cy=new Date().getFullYear();
+  const taskDateEl=document.getElementById("taskDate");
+  let current=new Date();
+  let cm=current.getMonth(), cy=current.getFullYear();
+  let selectedYMD = ymd(current);
 
   function renderCalendar(){
     calGrid.innerHTML="";
     const f=new Date(cy,cm,1);
-    const days=new Date(cy,cm+1,0).getDate();
     monthLabel.textContent=`${cy}. ${f.toLocaleString("hu-HU",{month:"long"})}`;
-    let empty=(f.getDay()+6)%7;
-    for(let i=0;i<empty;i++){ const d=document.createElement("div"); d.className="day out"; calGrid.appendChild(d);}
-    for(let d=1;d<=days;d++){
+
+    // DOW fejlécek
+    ["H","K","Sze","Cs","P","Szo","V"].forEach(d=>{
+      const el=document.createElement("div"); el.className="dow"; el.textContent=d; calGrid.appendChild(el);
+    });
+
+    const shift=(f.getDay()+6)%7;
+    for(let i=0;i<shift;i++){ const d=document.createElement("div"); d.className="day out"; calGrid.appendChild(d); }
+
+    const days=new Date(cy,cm+1,0).getDate();
+    for(let d=1; d<=days; d++){
       const el=document.createElement("div");
-      el.className="day";
-      el.textContent=d; calGrid.appendChild(el);
+      const dateObj=new Date(cy,cm,d);
+      const thisYMD=ymd(dateObj);
+      el.className="day" + (thisYMD===selectedYMD ? " selected":"");
+      el.textContent=d;
+      el.onclick=()=>{ selectedYMD=thisYMD; renderCalendar(); updateTaskDate(); subscribeTasks(); };
+      calGrid.appendChild(el);
     }
   }
-  prev.onclick=()=>{cm--;renderCalendar();}
-  next.onclick=()=>{cm++;renderCalendar();}
+  prev.onclick=()=>{ cm--; if(cm<0){cm=11;cy--;} renderCalendar(); };
+  next.onclick=()=>{ cm++; if(cm>11){cm=0; cy++;} renderCalendar(); };
+
+  function updateTaskDate(){ taskDateEl.textContent = selectedYMD; }
+
+  // --- Teendők (szöveg + pipálás) ---
+  const taskInput=document.getElementById("taskInput");
+  const addTask=document.getElementById("addTask");
+  const taskList=document.getElementById("taskList");
+  let unsubTasks=null;
+
+  function subscribeTasks(){
+    if(unsubTasks) unsubTasks();
+    const qref=query(
+      collection(db,`households/${householdId}/tasks`),
+      where("date","==",selectedYMD),
+      orderBy("createdAt","asc")
+    );
+    unsubTasks = onSnapshot(qref, snap=>{
+      const items=[];
+      snap.forEach(s=>items.push({id:s.id, ...s.data()}));
+      renderTasks(items);
+    });
+  }
+
+  function renderTasks(items){
+    taskList.innerHTML="";
+    if(!items.length){
+      const li=document.createElement("li");
+      const span=document.createElement("span");
+      span.className="text muted";
+      span.textContent="Nincs teendő ezen a napon.";
+      li.append(span);
+      taskList.append(li);
+      return;
+    }
+    // nem kész felül, kész alul
+    items.sort((a,b)=>(a.done===b.done)?0:(a.done?1:-1));
+    for(const t of items){
+      const li=document.createElement("li");
+      const cb=document.createElement("input");
+      cb.type="checkbox"; cb.checked=!!t.done;
+      const span=document.createElement("span");
+      span.className="text"; span.textContent=t.text;
+      if(cb.checked) span.style.textDecoration="line-through";
+
+      cb.onchange=()=> updateDoc(doc(db,`households/${householdId}/tasks/${t.id}`), {done:cb.checked});
+
+      const del=document.createElement("button");
+      del.className="ghost"; del.textContent="🗑️";
+      del.onclick=()=> deleteDoc(doc(db,`households/${householdId}/tasks/${t.id}`));
+
+      li.append(cb,span,del);
+      taskList.append(li);
+    }
+  }
+
+  addTask.onclick=async()=>{
+    const text=taskInput.value.trim();
+    if(!text) return;
+    await addDoc(collection(db,`households/${householdId}/tasks`),{
+      text, done:false, date:selectedYMD, createdAt:Date.now()
+    });
+    taskInput.value="";
+  };
+
+  // --- Bevásárlólista (checkbox marad) ---
+  const shopInput=document.getElementById("shopInput");
+  const addItem=document.getElementById("addItem");
+  const shopList=document.getElementById("shopList");
 
   function subscribeShopping(){
     const q=query(collection(db,`households/${householdId}/shopping`),orderBy("createdAt"));
@@ -132,11 +243,12 @@
         const cb=document.createElement("input");
         cb.type="checkbox"; cb.checked=item.done||false;
         const txt=document.createElement("span");
+        txt.className="text";
         txt.textContent=item.text;
         if(cb.checked) txt.style.textDecoration="line-through";
         cb.onchange=()=> updateDoc(doc(db,`households/${householdId}/shopping/${docSnap.id}`),{done:cb.checked});
         const del=document.createElement("button");
-        del.textContent="🗑️";
+        del.textContent="🗑️"; del.className="ghost";
         del.onclick=()=>deleteDoc(doc(db,`households/${householdId}/shopping/${docSnap.id}`));
         li.append(cb,txt,del);
         shopList.appendChild(li);
@@ -145,18 +257,26 @@
   }
 
   addItem.onclick=async()=>{
-    const text=shopInput.value.trim();
-    if(!text) return;
+    const text=shopInput.value.trim(); if(!text) return;
     await addDoc(collection(db,`households/${householdId}/shopping`),{
-      text,done:false,createdAt:Date.now()
+      text, done:false, createdAt:Date.now()
     });
     shopInput.value="";
   };
+
+  // --- boot ---
+  function boot(){
+    selectedYMD = ymd(new Date());
+    updateTaskDate();
+    renderCalendar();
+    subscribeTasks();
+    subscribeShopping();
+  }
 </script>
 
 <script>
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./sw.js?v=10');
+  navigator.serviceWorker.register('./sw.js?v=11');
 }
 </script>
 
