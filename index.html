@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#0ea5e9">
-  <title>FamilyBoard v11d</title>
-  <link rel="manifest" href="./manifest.webmanifest?v=11d">
+  <title>FamilyBoard v11d-fix</title>
+  <link rel="manifest" href="./manifest.webmanifest?v=11d-fix">
   <style>
     :root{--primary:#0ea5e9;--bg:#f6f8fb;--card:#fff;--text:#222;--muted:#6b7280;--border:#e5e7eb;}
     *{box-sizing:border-box}
@@ -20,24 +20,24 @@
     li:last-child{border-bottom:none}
     li input[type="checkbox"]{transform:scale(1.2);cursor:pointer}
     li span.text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .badge-time{font-size:12px;background:#0ea5e91a;color:#0369a1;border:1px solid #bae6fd;padding:3px 8px;border-radius:999px}
+    .badge-time{font-size:12px;background:#0ea5e91a;color:#0369a1;border:1px solid #bae6fd;padding:3px 8px;border-radius:999px;cursor:pointer}
     button{border:none;border-radius:10px;padding:10px 14px;font-size:16px;background:var(--primary);color:#fff;cursor:pointer;}
     button.ghost{background:#fff;color:var(--primary);border:1px solid var(--primary);}
     input[type="text"], input[type="time"]{padding:12px;border-radius:10px;border:1px solid var(--border);font-size:16px;}
     input[type="text"]{flex:1}
     input[type="time"]{width:98px}
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .small{font-size:13px}
 
+    /* Naptár + pöttyök */
     .cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
     .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
     .dow{text-align:center;color:#6b7280;font-size:12px;padding:6px 0;}
-    .day{padding:8px 8px 10px;border-radius:10px;background:#fff;border:1px solid var(--border);text-align:right;cursor:pointer;user-select:none;display:flex;flex-direction:column;align-items:flex-end;min-height:48px}
-    .day.out{background:#f1f1f1;color:#bbb;}
+    .day{padding:6px 6px 10px;border-radius:10px;background:#fff;border:1px solid var(--border);text-align:right;cursor:pointer;user-select:none;display:flex;flex-direction:column;align-items:flex-end;min-height:48px;font-size:14px}
     .day.selected{outline:2px solid var(--primary);}
-    .dots{display:flex;gap:4px;align-self:center;margin-top:6px;min-height:8px}
+    .dots{display:flex;gap:3px;align-self:center;margin-top:4px;min-height:8px}
     .dot{width:6px;height:6px;border-radius:50%;background:var(--primary)}
-    .dot.more{width:auto;height:auto;border-radius:6px;padding:0 4px;font-size:10px;line-height:14px;background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd}
-    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-    .small{font-size:13px}
+    .dot.more{width:auto;height:auto;border-radius:6px;padding:0 4px;font-size:10px;line-height:14px;background:#0ea5e91a;color:#0369a1;border:1px solid #bae6fd}
   </style>
 </head>
 
@@ -139,7 +139,7 @@
     showApp(); boot();
   });
 
-  // --- UI: Naptár + teendők dátuma ---
+  // --- UI: Naptár + teendők dátuma + pötty számláló ---
   const calGrid=document.getElementById("calGrid");
   const monthLabel=document.getElementById("monthLabel");
   const taskDateEl=document.getElementById("taskDate");
@@ -147,13 +147,10 @@
   let cm=current.getMonth(), cy=current.getFullYear();
   let selectedYMD = ymd(current);
 
-  // Aggregált számlálók (dátum -> count) a pöttyökhöz
   let taskCounts = new Map();
   let unsubTaskCounts = null;
 
   function subscribeTaskCounts(){
-    // Egyszerű: az egész tasks kollekcióra hallgatunk és kliensen aggregálunk.
-    // Családi használatra bőven elég, nem kell index.
     if (unsubTaskCounts) unsubTaskCounts();
     unsubTaskCounts = onSnapshot(collection(db, `households/${householdId}/tasks`), snap=>{
       const counts = new Map();
@@ -164,7 +161,6 @@
         counts.set(dt, (counts.get(dt)||0) + 1);
       });
       taskCounts = counts;
-      // a naptár újrarajzolása, hogy a pöttyök azonnal frissüljenek
       renderCalendar();
     });
   }
@@ -179,7 +175,7 @@
     });
 
     const shift=(f.getDay()+6)%7;
-    for(let i=0;i<shift;i++){ const d=document.createElement("div"); d.className="day out"; calGrid.appendChild(d); }
+    for(let i=0;i<shift;i++){ const el=document.createElement("div"); el.className="day out"; calGrid.appendChild(el); }
 
     const days=new Date(cy,cm+1,0).getDate();
     for(let d=1; d<=days; d++){
@@ -189,7 +185,7 @@
       el.className="day" + (thisYMD===selectedYMD ? " selected":"");
       el.textContent=d;
 
-      // pöttyök: teendő számláló az adott napra
+      // pöttyök
       const c = taskCounts.get(thisYMD) || 0;
       const dots = document.createElement("div");
       dots.className = "dots";
@@ -215,32 +211,27 @@
   }
   prev.onclick=()=>{ cm--; if(cm<0){cm=11;cy--;} renderCalendar(); };
   next.onclick=()=>{ cm++; if(cm>11){cm=0; cy++;} renderCalendar(); };
-
   function updateTaskDate(){ taskDateEl.textContent = selectedYMD; }
 
-  // --- Teendők (időponttal) ---
+  // --- Teendők (időponttal, index nélkül) ---
   const taskInput=document.getElementById("taskInput");
   const taskTime=document.getElementById("taskTime");
   const addTask=document.getElementById("addTask");
   const taskList=document.getElementById("taskList");
   let unsubTasks=null;
 
-  const minutes = (t)=>{
-    if(!t || !validTime(t)) return 1e9; // üres/hibás → lista vége
-    const [h,m] = t.split(":").map(Number);
-    return h*60 + m;
+  const minutes=t=>{
+    if(!t || !validTime(t)) return 1e9;
+    const [h,m]=t.split(":").map(Number);
+    return h*60+m;
   }
 
   function subscribeTasks(){
     if(unsubTasks) unsubTasks();
-    const qref = query(
-      collection(db, `households/${householdId}/tasks`),
-      where("date","==",selectedYMD)   // NINCS orderBy -> NEM kell index
-    );
+    const qref = query(collection(db, `households/${householdId}/tasks`), where("date","==",selectedYMD));
     unsubTasks = onSnapshot(qref, snap=>{
       const items=[];
       snap.forEach(s=>items.push({id:s.id, ...s.data()}));
-      // rendezés: nem kész felül, idő szerint, majd createdAt
       items.sort((a,b)=>{
         if(!!a.done !== !!b.done) return a.done ? 1 : -1;
         const am = minutes(a.time), bm = minutes(b.time);
@@ -255,10 +246,7 @@
     taskList.innerHTML="";
     if(!items.length){
       const li=document.createElement("li");
-      const span=document.createElement("span");
-      span.className="text muted";
-      span.textContent="Nincs teendő ezen a napon.";
-      li.append(span);
+      li.innerHTML="<span class='text muted'>Nincs teendő ezen a napon.</span>";
       taskList.append(li);
       return;
     }
@@ -267,8 +255,8 @@
       const cb=document.createElement("input");
       cb.type="checkbox"; cb.checked=!!t.done;
 
-      const timeBadge=document.createElement("button");
-      timeBadge.className="ghost badge-time";
+      const timeBadge=document.createElement("span");
+      timeBadge.className="badge-time";
       timeBadge.textContent = t.time && validTime(t.time) ? `🕒 ${t.time}` : "—";
       timeBadge.title = "Idő módosítása";
       timeBadge.onclick = async ()=>{
@@ -307,26 +295,33 @@
     taskInput.value=""; taskTime.value="";
   };
 
-  // --- Bevásárlólista (stabil rendezés + createdAt fallback) ---
+  // --- Bevásárlólista (STABIL) ---
   const shopInput=document.getElementById("shopInput");
   const addItem=document.getElementById("addItem");
   const shopList=document.getElementById("shopList");
 
   function subscribeShopping(){
-    const q=query(collection(db,`households/${householdId}/shopping`));
-    onSnapshot(q,snap=>{
-      shopList.innerHTML="";
+    const qref = query(collection(db,`households/${householdId}/shopping`)); // nincs orderBy -> nem kell index
+    onSnapshot(qref, snap=>{
       const arr=[];
       snap.forEach(d=>arr.push({id:d.id, ...d.data()}));
 
-      // Kliens oldali rendezés: nem kész felül, majd createdAt – hiány esetén a végére
+      // Stabil rendezés: nem kész felül, utána createdAt; ha hiányzik, a végére
       arr.sort((a,b)=>{
         if(!!a.done !== !!b.done) return a.done ? 1 : -1;
-        if(!a.createdAt && !b.createdAt) return 0;
-        if(!a.createdAt) return 1;
-        if(!b.createdAt) return -1;
-        return a.createdAt - b.createdAt;
+        const ac = (a.createdAt ?? Number.MAX_SAFE_INTEGER);
+        const bc = (b.createdAt ?? Number.MAX_SAFE_INTEGER);
+        return ac - bc;
       });
+
+      // Kirajzolás
+      shopList.innerHTML="";
+      if(!arr.length){
+        const li=document.createElement("li");
+        li.innerHTML="<span class='text muted'>Nincs tétel.</span>";
+        shopList.append(li);
+        return;
+      }
 
       arr.forEach(item=>{
         const li=document.createElement("li");
@@ -335,28 +330,43 @@
 
         const txt=document.createElement("span");
         txt.className="text";
-        txt.textContent=item.text;
+        txt.textContent=item.text || "(névtelen tétel)";
         if(cb.checked) txt.style.textDecoration="line-through";
 
-        cb.onchange=()=> updateDoc(
-          doc(db,`households/${householdId}/shopping/${item.id}`),
-          {done:cb.checked, createdAt: item.createdAt || Date.now()}
-        );
+        cb.onchange=async()=>{
+          try{
+            await updateDoc(doc(db,`households/${householdId}/shopping/${item.id}`),{
+              done:cb.checked,
+              createdAt: item.createdAt || Date.now() // fallback, hogy legyen
+            });
+          }catch(e){
+            console.error(e); alert("Nem sikerült frissíteni a tételt.");
+          }
+        };
 
         const del=document.createElement("button");
         del.textContent="🗑️"; del.className="ghost";
-        del.onclick=()=>deleteDoc(doc(db,`households/${householdId}/shopping/${item.id}`));
+        del.onclick=async()=>{
+          try{
+            await deleteDoc(doc(db,`households/${householdId}/shopping/${item.id}`));
+          }catch(e){
+            console.error(e); alert("Nem sikerült törölni a tételt.");
+          }
+        };
 
         li.append(cb,txt,del);
         shopList.appendChild(li);
       });
+    }, err=>{
+      console.error("onSnapshot(shopping) hiba:", err);
+      alert("Bevásárlólista olvasási hiba (ellenőrizd a Firestore-t).");
     });
   }
 
   function boot(){
     selectedYMD = ymd(new Date());
     updateTaskDate();
-    subscribeTaskCounts();  // ← pöttyök számláló hallgató
+    subscribeTaskCounts();
     renderCalendar();
     subscribeTasks();
     subscribeShopping();
@@ -365,7 +375,7 @@
 
 <script>
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./sw.js?v=11d');
+  navigator.serviceWorker.register('./sw.js?v=11d-fix');
 }
 </script>
 
