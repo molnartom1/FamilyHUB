@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#0ea5e9">
-  <title>FamilyBoard v11c</title>
-  <link rel="manifest" href="./manifest.webmanifest?v=11c">
+  <title>FamilyBoard v11c2</title>
+  <link rel="manifest" href="./manifest.webmanifest?v=11c2">
   <style>
     :root{--primary:#0ea5e9;--bg:#f6f8fb;--card:#fff;--text:#222;--muted:#6b7280;--border:#e5e7eb;}
     *{box-sizing:border-box}
@@ -180,7 +180,7 @@
   let unsubTasks=null;
 
   function minutes(t){
-    if(!t || !validTime(t)) return 1e9; // üres vagy hibás → a lista végére
+    if(!t || !validTime(t)) return 1e9; // üres/hibás → lista vége
     const [h,m] = t.split(":").map(Number);
     return h*60 + m;
   }
@@ -189,12 +189,12 @@
     if(unsubTasks) unsubTasks();
     const qref = query(
       collection(db, `households/${householdId}/tasks`),
-      where("date","==",selectedYMD)   // nincs orderBy -> nem kell index
+      where("date","==",selectedYMD)   // NINCS orderBy -> NEM kell index
     );
     unsubTasks = onSnapshot(qref, snap=>{
       const items=[];
       snap.forEach(s=>items.push({id:s.id, ...s.data()}));
-      // rendezés: nem kész felül, időpont szerint, majd createdAt
+      // rendezés: nem kész felül, idő szerint, majd createdAt
       items.sort((a,b)=>{
         if(!!a.done !== !!b.done) return a.done ? 1 : -1;
         const am = minutes(a.time), bm = minutes(b.time);
@@ -261,7 +261,7 @@
     taskInput.value=""; taskTime.value="";
   };
 
-  // --- Bevásárlólista (változatlan, checkbox-szal) ---
+  // --- Bevásárlólista (stabil rendezés + createdAt fallback) ---
   const shopInput=document.getElementById("shopInput");
   const addItem=document.getElementById("addItem");
   const shopList=document.getElementById("shopList");
@@ -272,30 +272,48 @@
       shopList.innerHTML="";
       const arr=[];
       snap.forEach(d=>arr.push({id:d.id, ...d.data()}));
-      // kliens oldali rendezés: nem kész felül, majd createdAt
+
+      // Kliens oldali rendezés: nem kész felül, majd createdAt – hiány esetén a végére
       arr.sort((a,b)=>{
-        if(!!a.done === !!b.done){
-          return (a.createdAt||0) - (b.createdAt||0);
-        }
-        return a.done ? 1 : -1;
+        if(!!a.done !== !!b.done) return a.done ? 1 : -1;
+        if(!a.createdAt && !b.createdAt) return 0;
+        if(!a.createdAt) return 1;
+        if(!b.createdAt) return -1;
+        return a.createdAt - b.createdAt;
       });
+
       arr.forEach(item=>{
         const li=document.createElement("li");
         const cb=document.createElement("input");
         cb.type="checkbox"; cb.checked=item.done||false;
+
         const txt=document.createElement("span");
         txt.className="text";
         txt.textContent=item.text;
         if(cb.checked) txt.style.textDecoration="line-through";
-        cb.onchange=()=> updateDoc(doc(db,`households/${householdId}/shopping/${item.id}`),{done:cb.checked});
+
+        cb.onchange=()=> updateDoc(
+          doc(db,`households/${householdId}/shopping/${item.id}`),
+          {done:cb.checked, createdAt: item.createdAt || Date.now()}
+        );
+
         const del=document.createElement("button");
         del.textContent="🗑️"; del.className="ghost";
         del.onclick=()=>deleteDoc(doc(db,`households/${householdId}/shopping/${item.id}`));
+
         li.append(cb,txt,del);
         shopList.appendChild(li);
       });
     });
   }
+
+  addItem.onclick=async()=>{
+    const text=shopInput.value.trim(); if(!text) return;
+    await addDoc(collection(db,`households/${householdId}/shopping`),{
+      text, done:false, createdAt:Date.now()
+    });
+    shopInput.value="";
+  };
 
   function boot(){
     selectedYMD = ymd(new Date());
@@ -308,7 +326,9 @@
 
 <script>
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./sw.js?v=11c');
+  // Ha még nem frissítetted a sw.js-t v11c2-re, ez akkor is működni fog,
+  // csak a régi SW marad aktív. Frissítéskor érdemes a sw.js-ben is v11c2-re váltani.
+  navigator.serviceWorker.register('./sw.js?v=11c2');
 }
 </script>
 
