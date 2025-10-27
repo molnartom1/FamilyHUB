@@ -6,287 +6,178 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#0ea5e9">
-  <link rel="manifest" href="./manifest.webmanifest?v=7">
-  <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <title>FamilyBoard – PIN & Firebase Sync (v7)</title>
+  <link rel="manifest" href="./manifest.webmanifest?v=9">
+  <title>FamilyBoard v9</title>
   <style>
-    :root{--primary:#0ea5e9;--bg:#f6f8fb;--card:#fff;--text:#222;--muted:#6b7280;--border:#e5e7eb;
-      --inset-top:env(safe-area-inset-top,0px);--inset-right:env(safe-area-inset-right,0px);
-      --inset-bottom:env(safe-area-inset-bottom,0px);--inset-left:env(safe-area-inset-left,0px);}
-    html,body{width:100%;max-width:100%;overflow-x:hidden;margin:0;padding:0;background:var(--bg);color:var(--text);
-      -webkit-text-size-adjust:100%;box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
-    *,*::before,*::after{box-sizing:inherit}
-    header{position:sticky;top:0;z-index:10;background:var(--primary);color:#fff;
-      padding:calc(8px + var(--inset-top)) 12px 8px;margin-left:calc(-8px - var(--inset-left));margin-right:calc(-8px - var(--inset-right));
-      text-align:center;font-size:18px;font-weight:700}
-    main{width:100%;max-width:1000px;margin:14px auto;display:grid;gap:12px;grid-template-columns:1fr}
-    @media(min-width:1000px){main{grid-template-columns:1.2fr 1fr}}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px;box-shadow:0 6px 24px rgba(0,0,0,.05)}
-    h2{margin:0 0 8px;font-size:17px}.muted{color:var(--muted)}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.right{margin-left:auto}
-    button{cursor:pointer;border:none;background:var(--primary);color:#fff;padding:10px 12px;border-radius:10px;font-weight:600;font-size:16px}
-    button.ghost{background:transparent;color:var(--primary);border:1px solid var(--primary)}
-    input[type="text"],input[type="time"]{padding:12px;border-radius:10px;border:1px solid var(--border);font-size:16px;min-width:0}
-    input[type="text"]{flex:1}
-    ul{list-style:none;margin:8px 0 0;padding:0}
-    li.item{display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);padding:8px 4px;min-width:0}
-    li.item:last-child{border-bottom:none}
-    li.item.done .txt{text-decoration:line-through;color:#9ca3af}
-    .txt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
-    .badge-time{font-size:12px;background:#0ea5e91a;color:#0369a1;border:1px solid #bae6fd;padding:3px 8px;border-radius:999px}
-    .pill{font-size:12px;padding:2px 8px;border-radius:999px;background:#eef2ff;color:#3730a3;border:1px solid #c7d2fe}
-    .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-    .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
-    .dow{font-size:12px;text-align:center;color:#6b7280;padding:6px 0}
-    .day{position:relative;background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px;text-align:right;min-height:52px;font-weight:600;color:#111;overflow:hidden;user-select:none;cursor:pointer}
-    .day.out{color:#bbb;background:#fafafa}.day.selected{outline:2px solid var(--primary);box-shadow:0 0 0 3px rgba(14,165,233,.15)}
-    .count{position:absolute;left:6px;top:6px;font-size:11px;color:#fff;background:var(--primary);padding:2px 6px;border-radius:999px}
-    .center{max-width:520px;width:92vw;margin:28px auto}
-    .warn{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;padding:8px;border-radius:10px;font-size:14px;margin-top:8px}
+    :root{--primary:#0ea5e9;--bg:#f6f8fb;--card:#fff;--text:#222;--muted:#6b7280;--border:#e5e7eb;}
+    body{margin:0;background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--text);}
+    header{background:var(--primary);color:#fff;text-align:center;padding:14px;font-weight:700;font-size:18px;}
+    .center{max-width:520px;margin:24px auto;}
+    .card{background:var(--card);padding:14px;border-radius:12px;border:1px solid var(--border);}
+    .warn{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;padding:8px;border-radius:10px;margin-top:8px;font-size:14px}
+    .muted{color:var(--muted)}
+    ul{list-style:none;padding:0;margin-top:12px;}
+    li{display:flex;align-items:center;justify-content:space-between;padding:10px;border-bottom:1px solid var(--border);}
+    input[type="text"]{padding:12px;border-radius:10px;border:1px solid var(--border);font-size:16px;flex:1;}
+
+    button{border:none;border-radius:10px;padding:10px 14px;font-size:16px;background:var(--primary);color:#fff;cursor:pointer;}
+    button.ghost{background:#fff;color:var(--primary);border:1px solid var(--primary);}
+
+    .cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+    .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+    .dow{text-align:center;color:#6b7280;font-size:12px;padding:6px 0;}
+    .day{padding:10px;border-radius:10px;background:#fff;border:1px solid var(--border);text-align:right;cursor:pointer;}
+    .day.out{background:#f1f1f1;color:#bbb;}
+    .day.selected{outline:2px solid var(--primary);}
   </style>
 </head>
-<body>
-  <header>🔐 FamilyBoard – PIN & Firebase Sync (v7)</header>
 
+<body>
+  <header>Family Board</header>
+
+  <!-- PIN kapu -->
   <div id="gate" class="center card">
-    <h2>Csatlakozás a családi táblához</h2>
-    <p class="muted">Első alkalommal kérünk egy <strong>PIN</strong>-t. Ezt az admin állította be.</p>
-    <div class="warn" id="gateMsg" hidden></div>
+    <h2>PIN szükséges</h2>
+    <p class="muted">Első csatlakozáskor add meg a PIN-t.</p>
+    <div id="gateMsg" class="warn" hidden></div>
   </div>
 
+  <!-- APP -->
   <div id="app" class="center" hidden>
-    <div class="card" style="margin-bottom:0">
-      <div class="row">
-        <div>Háztartás: <span class="pill">default</span></div>
-        <button id="leave" class="ghost right">Eszköz leválasztása</button>
+    <div class="card">
+      <div class="cal-head">
+        <button id="prev" class="ghost">◀</button>
+        <h3 id="monthLabel">Hónap</h3>
+        <button id="next" class="ghost">▶</button>
       </div>
+      <div class="cal-grid" id="calGrid"></div>
+      <p>Napi teendők megtekinthetők, de hozzáadni nem lehet.</p>
     </div>
 
-    <main>
-      <section>
-        <div class="card">
-          <div class="cal-head">
-            <button id="prev" class="ghost">◀</button>
-            <h3 id="monthLabel">—</h3>
-            <button id="next" class="ghost">▶</button>
-          </div>
-          <div class="cal-grid" id="calGrid"></div>
-        </div>
-
-        <div class="card" style="margin-top:12px">
-          <h2>Teendők – <span id="dateOut" class="muted">-</span></h2>
-          <div class="row" style="margin-bottom:8px;flex-wrap:wrap">
-            <input type="text" id="taskInput" placeholder="Új teendő..." />
-            <input type="time" id="taskTime" aria-label="Időpont (óra:perc)" />
-            <button id="addTask">Hozzáadás</button>
-          </div>
-          <ul id="taskList"></ul>
-        </div>
-      </section>
-
-      <section>
-        <div class="card">
-          <h2>🛒 Bevásárlólista</h2>
-          <div class="row" style="margin-bottom:8px">
-            <input type="text" id="shopInput" placeholder="Új tétel..." />
-            <button id="addItem">Hozzáadás</button>
-          </div>
-          <ul id="shopList"></ul>
-          <p class="muted">Törléshez PIN szükséges (2025).</p>
-        </div>
-      </section>
-    </main>
+    <div class="card" style="margin-top:16px">
+      <h2>🛒 Bevásárlólista</h2>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="shopInput" placeholder="Új tétel..." />
+        <button id="addItem">+</button>
+      </div>
+      <ul id="shopList"></ul>
+    </div>
   </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signInAnonymously, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, orderBy, onSnapshot, updateDoc, deleteDoc, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
-    // --- Firebase config: mosas-nyilvantartas ---
-    const firebaseConfig = {
-      apiKey: "AIzaSyAeoxtOe5Cleasm3KdeSHP9WDR3PkU-N1I",
-      authDomain: "mosas-nyilvantartas.firebaseapp.com",
-      projectId: "mosas-nyilvantartas",
-      storageBucket: "mosas-nyilvantartas.firebasestorage.app",
-      messagingSenderId: "38259241645",
-      appId: "1:38259241645:web:26070b1d0686def9f00c24"
-    };
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signInAnonymously, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, orderBy, onSnapshot, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
-    const appFB = initializeApp(firebaseConfig);
-    const auth = getAuth(appFB);
-    const db = getFirestore(appFB);
-    setPersistence(auth, browserLocalPersistence);
-    enableIndexedDbPersistence(db).catch(()=>{});
+  const firebaseConfig = {
+    apiKey: "AIzaSyAeoxtOe5Cleasm3KdeSHP9WDR3PkU-N1I",
+    authDomain: "mosas-nyilvantartas.firebaseapp.com",
+    projectId: "mosas-nyilvantartas",
+    storageBucket: "mosas-nyilvantartas.firebasestorage.app",
+    messagingSenderId: "38259241645",
+    appId: "1:38259241645:web:26070b1d0686def9f00c24"
+  };
 
-    // helpers
-    const $=s=>document.querySelector(s);
-    const gate=$('#gate'), appView=$('#app'), gateMsg=$('#gateMsg');
-    const PIN="2025"; // UI törléshez
-    const requirePin=(m="PIN kell a törléshez")=>prompt(m)===PIN;
+  const appFB = initializeApp(firebaseConfig);
+  const auth = getAuth(appFB);
+  const db = getFirestore(appFB);
 
-    const pad=n=>String(n).padStart(2,"0");
-    const ymdOf=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-    function normalizeAndValidateTime(input) {
-    if (!input) return null;
-    const m = input.match(/^(\d{1,2}):(\d{1,2})$/);
-    if (!m) return null;
-    let h = Number(m[1]);
-    let mnt = Number(m[2]);
-    if (h < 0 || h > 23 || mnt < 0 || mnt > 59) return null;
-    return `${h.toString().padStart(2, '0')}:${mnt.toString().padStart(2, '0')}`;}
-    async function sha256(str){ const buf=await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str)); return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join(''); }
+  setPersistence(auth, browserLocalPersistence);
 
-    const householdId="default";
-    function showApp(v){ gate.hidden=v; appView.hidden=!v; }
+  const householdId = "default";
+  const PIN = "2025";
 
-    // --- első indítás: anonymous + PIN tagság ---
-    onAuthStateChanged(auth, async (user)=>{
-      if(!user){ await signInAnonymously(auth); return; }
-      const memberRef = doc(db, `households/${householdId}/members/${user.uid}`);
-      const member = await getDoc(memberRef);
-      if(member.exists()){ boot(); return; }
+  function showGate(){ gate.hidden=false; app.hidden=true; }
+  function showApp(){ gate.hidden=true; app.hidden=false; }
+  const gateMsg = document.getElementById("gateMsg");
 
-      showApp(false); gateMsg.hidden=false; gateMsg.textContent="Kérlek add meg a háztartás PIN-kódját.";
-      const pin = prompt("Háztartás PIN (csak első csatlakozáskor szükséges):");
-      if(pin===null || pin===""){ gateMsg.textContent="Sikertelen csatlakozás: nem adtál meg PIN-t."; return; }
-      const pinHash = await sha256(pin);
-      try{
-        await setDoc(memberRef, { pinHash }); // rules ellenőrzi a secrets/config pinHash-hez képest
-        boot();
-      }catch(e){
-        gateMsg.textContent = "Hibás PIN vagy nincs beállítva. ("+e.message+")";
-      }
+  onAuthStateChanged(auth, async(user)=>{
+    if(!user){
+      showGate();
+      await signInAnonymously(auth);
+      return;
+    }
+    const memberRef = doc(db, `households/${householdId}/members/${user.uid}`);
+    const member = await getDoc(memberRef);
+
+    if(member.exists()){ showApp(); subscribeShopping(); renderCalendar(); return; }
+
+    showGate();
+    gateMsg.hidden = false;
+    gateMsg.textContent = "Add meg a háztartás PIN-kódját:";
+    const input = prompt("PIN:");
+    if(input !== PIN){ gateMsg.textContent = "Hibás PIN!"; return; }
+
+    await setDoc(memberRef, { pin: true });
+    showApp();
+    subscribeShopping();
+    renderCalendar();
+  });
+
+  const calGrid = document.getElementById("calGrid");
+  const monthLabel = document.getElementById("monthLabel");
+  const today = new Date();
+  let currentMonth = today.getMonth();
+  let currentYear = today.getFullYear();
+
+  function renderCalendar(){
+    calGrid.innerHTML = "";
+    const firstDay = new Date(currentYear, currentMonth, 1);
+    const daysInMonth = new Date(currentYear, currentMonth+1, 0).getDate();
+    monthLabel.textContent = `${currentYear}. ${firstDay.toLocaleString("hu-HU",{month:"long"})}`;
+
+    const start = firstDay.getDay() || 7;
+    for(let i=1;i<start;i++){
+      const d = document.createElement("div");
+      d.className = "day out";
+      calGrid.appendChild(d);
+    }
+    for(let day=1;day<=daysInMonth;day++){
+      const d = document.createElement("div");
+      d.className="day";
+      d.textContent=day;
+      calGrid.appendChild(d);
+    }
+  }
+  document.getElementById("prev").onclick=()=>{ currentMonth--; renderCalendar(); };
+  document.getElementById("next").onclick=()=>{ currentMonth++; renderCalendar(); };
+
+
+  function subscribeShopping(){
+    const qref = query(collection(db,`households/${householdId}/shopping`), orderBy("createdAt"));
+    onSnapshot(qref, snap=>{
+      shopList.innerHTML="";
+      snap.forEach(s=>{
+        const item = s.data();
+        const li=document.createElement("li");
+        li.textContent=item.text;
+        const del=document.createElement("button");
+        del.textContent="🗑️";
+        del.onclick=()=> deleteDoc(doc(db,`households/${householdId}/shopping/${s.id}`));
+        li.appendChild(del);
+        shopList.appendChild(li);
+      });
     });
+  }
 
-    // --- app logic (calendar + tasks + shopping) ---
-    const DOW=['H','K','Sze','Cs','P','Szo','V'];
-    const calGrid=$('#calGrid'), monthLabel=$('#monthLabel'), dateOut=$('#dateOut');
-    const list=$('#taskList'), ti=$('#taskInput'), tt=$('#taskTime'), addTask=$('#addTask');
-    const shopList=$('#shopList'), shopInput=$('#shopInput'), addItem=$('#addItem');
-    let selected=ymdOf(new Date()), viewMonth=selected.slice(0,7)+'-01', unsubTasks=null, unsubShopping=null, monthCounts={};
-
-    function moveMonth(o){
-      const [y,m]=viewMonth.split('-').map(Number);
-      const d=new Date(y,m-1+o,1);
-      viewMonth=`${d.getFullYear()}-${pad(d.getMonth()+1)}-01`;
-      renderCalendar();
-    }
-    document.addEventListener('click',e=>{
-      if(e.target.id==='prev') moveMonth(-1);
-      if(e.target.id==='next') moveMonth(1);
+  addItem.onclick=async()=>{
+    const text=shopInput.value.trim();
+    if(!text) return;
+    await addDoc(collection(db,`households/${householdId}/shopping`),{
+      text,
+      createdAt:Date.now()
     });
+    shopInput.value="";
+  };
 
-    function timeToMinutes(t){ if(!t||!validTime(t)) return 1e9; const [h,m]=t.split(':').map(Number); return h*60+m; }
+</script>
 
-    async function subscribeTasksForSelected(){
-      if(unsubTasks) unsubTasks();
-      const qref = query(collection(db, `households/${householdId}/tasks`), where('date','==',selected));
-      unsubTasks = onSnapshot(qref, snap=>{
-        const arr=[]; snap.forEach(s=>arr.push({id:s.id, ...s.data()}));
-        arr.sort((a,b)=> timeToMinutes(a.time)-timeToMinutes(b.time));
-        renderTaskList(arr);
-      });
-    }
+<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js?v=9');
+}
+</script>
 
-    function renderCalendar(){
-      calGrid.innerHTML='';
-      DOW.forEach(d=>{const el=document.createElement('div'); el.className='dow'; el.textContent=d; calGrid.appendChild(el);});
-      const [y,m]=viewMonth.split('-').map(Number);
-      const first=new Date(y,m-1,1);
-      monthLabel.textContent=`${y}. ${first.toLocaleString('hu-HU',{month:'long'})}`;
-      const start=new Date(first); const shift=(start.getDay()+6)%7; start.setDate(start.getDate()-shift);
-      for(let i=0;i<42;i++){
-        const d=new Date(start); d.setDate(start.getDate()+i); const ymd=ymdOf(d);
-        const cell=document.createElement('div'); cell.className='day'; cell.textContent=d.getDate();
-        if(d.getMonth()!==first.getMonth())cell.classList.add('out');
-        if(ymd===selected)cell.classList.add('selected');
-        if(ymd===selected && monthCounts[ymd]!=null){
-          const c=document.createElement('div'); c.className='count'; c.textContent=monthCounts[ymd]===0?'✓':monthCounts[ymd]; cell.appendChild(c);
-        }
-        cell.onclick=()=>{ selected=ymd; renderCalendar(); dateOut.textContent=selected; subscribeTasksForSelected(); };
-        calGrid.appendChild(cell);
-      }
-    }
-
-    function renderTaskList(arr){
-      monthCounts[selected]=arr.filter(x=>!x.done).length;
-      renderCalendar();
-      dateOut.textContent=selected;
-      list.innerHTML='';
-      if(!arr.length){ const p=document.createElement('p'); p.textContent='Nincs teendő.'; p.className='muted'; list.appendChild(p); return; }
-      for(const t of arr){
-        const li=document.createElement('li'); li.className='item'+(t.done?' done':''); 
-        const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=t.done;
-        cb.onchange=async()=>{ await updateDoc(doc(db,`households/${householdId}/tasks/${t.id}`), {done:!t.done}); };
-        const tm=document.createElement('span'); tm.className='badge-time'; tm.textContent=t.time?`🕒 ${t.time}`:'—';
-        const ed=document.createElement('button'); ed.textContent='✏️'; ed.className='ghost';
-        ed.onclick=async()=>{ const nv=prompt('Idő (HH:MM, üres = nincs)', t.time||''); if(nv===null)return; if(nv!=='' && !validTime(nv)) return alert('Érvénytelen idő.'); await updateDoc(doc(db,`households/${householdId}/tasks/${t.id}`), {time:nv}); };
-        const tx=document.createElement('span'); tx.className='txt'; tx.textContent=t.text;
-        const right=document.createElement('span'); right.className='right';
-        const del=document.createElement('button'); del.className='ghost'; del.textContent='🗑️';
-        del.onclick=async()=>{ if(!requirePin())return; await deleteDoc(doc(db,`households/${householdId}/tasks/${t.id}`)); };
-        li.append(cb, tm, ed, tx, right, del); list.appendChild(li);
-      }
-    }
-
-    // *** EXTRA SAFE FIX: normalize time and validate only if real value ***
-    addTask.onclick=async()=>{
-      const text=ti.value.trim();
-  let raw = tt.value;
-  let time = (raw ?? '').toString().trim();
-  if (time === "--:--" || time.replace(/[-_: ]/g,"") === "") time = "";
-  if (!text) return;
-  let norm = normalizeAndValidateTime(time);
-  if (time && !norm) return alert("Érvénytelen idő (HH:MM vagy H:M)");
-  await addDoc(collection(db,`households/${householdId}/tasks`), { text, time: norm ? norm : "", done:false, date:selected, createdAt: Date.now() });
-  ti.value=''; tt.value='';
-};
-
-    function subscribeShopping(){
-      if(unsubShopping) unsubShopping();
-      const qref=query(collection(db,`households/${householdId}/shopping`), orderBy('createdAt','asc'));
-      unsubShopping=onSnapshot(qref, snap=>{
-        const items=[]; snap.forEach(s=>items.push({id:s.id, ...s.data()}));
-        renderShopping(items);
-      });
-    }
-    function renderShopping(items){
-      shopList.innerHTML='';
-      if(!items.length){ const p=document.createElement('p'); p.textContent='Üres bevásárlólista.'; p.className='muted'; shopList.appendChild(p); return; }
-      items.forEach(i=>{
-        const li=document.createElement('li'); li.className='item'+(i.done?' done':''); 
-        const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=i.done;
-        cb.onchange=async()=>{ await updateDoc(doc(db,`households/${householdId}/shopping/${i.id}`), {done:!i.done}); };
-        const tx=document.createElement('span'); tx.className='txt'; tx.textContent=i.text;
-        const del=document.createElement('button'); del.className='ghost'; del.textContent='🗑️';
-        del.onclick=async()=>{ if(!requirePin())return; await deleteDoc(doc(db,`households/${householdId}/shopping/${i.id}`)); };
-        li.append(cb, tx, del); shopList.appendChild(li);
-      });
-    }
-    addItem.onclick=async()=>{
-      const text=shopInput.value.trim(); if(!text) return;
-      await addDoc(collection(db,`households/${householdId}/shopping`), { text, done:false, createdAt: Date.now() });
-      shopInput.value='';
-    };
-
-    // eszköz leválasztása (member doc törlése, majd reload)
-    $('#leave').onclick = async ()=>{
-      const u = auth.currentUser; if(!u) return;
-      await deleteDoc(doc(db, `households/${householdId}/members/${u.uid}`)).catch(()=>{});
-      location.reload();
-    };
-
-    function boot(){
-      showApp(true);
-      renderCalendar();
-      subscribeTasksForSelected();
-      subscribeShopping();
-    }
-
-    // SW
-    if('serviceWorker' in navigator){
-      window.addEventListener('load', ()=> navigator.serviceWorker.register('./sw.js?v=7').catch(()=>{}));
-    }
-  </script>
 </body>
 </html>
