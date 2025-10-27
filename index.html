@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#0ea5e9">
-  <title>FamilyBoard v11e-fix</title>
-  <link rel="manifest" href="./manifest.webmanifest?v=11e-fix">
+  <title>FamilyBoard v11d-final</title>
+  <link rel="manifest" href="./manifest.webmanifest?v=11d-final">
   <style>
     :root{--primary:#0ea5e9;--bg:#f6f8fb;--card:#fff;--text:#222;--muted:#6b7280;--border:#e5e7eb;}
     *{box-sizing:border-box}
@@ -25,80 +25,39 @@
     li span.text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
     .badge-time{font-size:12px;background:#0ea5e91a;color:#0369a1;border:1px solid #bae6fd;padding:3px 8px;border-radius:999px;cursor:pointer}
+
     button{border:none;border-radius:10px;padding:10px 14px;font-size:16px;background:var(--primary);color:#fff;cursor:pointer;}
-    button.ghost{background:#fff;color:var(--primary);border:1px solid var(--primary);}
+    button.ghost{background:#fff;color:#0ea5e9;border:1px solid #0ea5e9;}
     input[type="text"], input[type="time"]{padding:12px;border-radius:10px;border:1px solid var(--border);font-size:16px;}
     input[type="text"]{flex:1}
     input[type="time"]{width:98px}
 
-    /* --- Naptár + pöttyök --- */
+    /* Naptár + pöttyök */
     .cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
     .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
     .dow{text-align:center;color:#6b7280;font-size:12px;padding:6px 0;}
     .day{padding:6px 6px 10px;border-radius:10px;background:#fff;border:1px solid var(--border);text-align:right;cursor:pointer;user-select:none;display:flex;flex-direction:column;align-items:flex-end;min-height:48px;font-size:14px}
     .day.selected{outline:2px solid var(--primary);}
     .day.out{background:#f1f1f1;color:#bbb;}
-
     .dots{display:flex;gap:3px;align-self:center;margin-top:4px;min-height:8px}
     .dot{width:6px;height:6px;border-radius:50%;background:var(--primary)}
     .dot.more{width:auto;height:auto;border-radius:6px;padding:0 4px;font-size:10px;line-height:14px;background:#0ea5e91a;color:#0369a1;border:1px solid #bae6fd}
-
-    /* --- 🔒 PIN popup --- */
-    #pinOverlay{
-      position:fixed;inset:0;
-      background:rgba(0,0,0,.4);
-      display:flex;justify-content:center;align-items:center;
-      backdrop-filter:blur(3px);
-      z-index:200;
-      animation:fade .18s ease;
-    }
-    #pinModal{
-      background:#fff;padding:20px;border-radius:14px;
-      width:90%;max-width:320px;
-      box-shadow:0 5px 15px rgba(0,0,0,.2);
-      animation:scale .18s ease;
-    }
-    #pinModal h3{margin:0 0 10px;text-align:center;}
-    #pinInput{
-      width:100%;font-size:20px;padding:10px;border-radius:10px;
-      border:2px solid var(--border);letter-spacing:8px;
-      text-align:center;
-    }
-    #pinError{color:#dc2626;font-size:13px;height:18px;text-align:center;margin-top:6px}
-    #pinBtns{display:flex;justify-content:space-between;margin-top:14px}
-    #pinBtns button{flex:1;margin:0 4px}
-
-    @keyframes fade{from{opacity:0}to{opacity:1}}
-    @keyframes scale{from{transform:scale(.85)}to{transform:scale(1)}}
   </style>
 </head>
 
 <body>
 <header>Family Board</header>
 
-<!-- PIN kapu (első belépés) -->
+<!-- PIN kapu -->
 <div id="gate" class="center card">
   <h2>PIN szükséges</h2>
   <p class="muted">Első csatlakozáskor add meg a PIN-t.</p>
   <div id="gateMsg" class="muted"></div>
 </div>
 
-<!-- PIN popup törléshez -->
-<div id="pinOverlay" hidden>
-  <div id="pinModal">
-    <h3>Törlés megerősítése</h3>
-    <input id="pinInput" type="password" maxlength="4" inputmode="numeric" placeholder="••••">
-    <div id="pinError"></div>
-    <div id="pinBtns">
-      <button id="pinCancel" class="ghost">Mégse</button>
-      <button id="pinOk">Törlés</button>
-    </div>
-  </div>
-</div>
-
 <!-- APP -->
 <div id="app" class="center" hidden>
-  <!-- Naptár -->
+  <!-- NAPTÁR -->
   <div class="card">
     <div class="cal-head">
       <button id="prev" class="ghost">◀</button>
@@ -108,153 +67,20 @@
     <div class="cal-grid" id="calGrid"></div>
   </div>
 
-  <!-- Teendők -->
+  <!-- TEENDŐK időponttal -->
   <div class="card" style="margin-top:16px">
     <div class="row" style="justify-content:space-between">
       <h2 style="margin:0">📋 Teendők – <span id="taskDate" class="small muted">—</span></h2>
       <div class="row" style="flex:0 0 auto">
         <input type="text" id="taskInput" placeholder="Új teendő…" />
-        <input type="time" id="taskTime">
-        <button id="addTask">+</button>
+        <input type="time" id="taskTime" aria-label="Idő (HH:MM)">
+        <button id="addTask" title="Hozzáadás">+</button>
       </div>
     </div>
     <ul id="taskList"></ul>
   </div>
 
-  <!-- Bevásárlólista -->
-  <div class="card" style="margin-top:16px">
-    <h2>🛒 Bevásárlólista</h2>
-    <div class="row">
-      <input type="text" id="shopInput" placeholder="Új tétel..." />
-      <button id="addItem">+</button>
-    </div>
-    <ul id="shopList"></ul>
-  </div>
-</div>
-<!DOCTYPE html>
-<html lang="hu">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="theme-color" content="#0ea5e9">
-  <title>FamilyBoard v11e-fix</title>
-  <link rel="manifest" href="./manifest.webmanifest?v=11e-fix">
-  <style>
-    :root{--primary:#0ea5e9;--bg:#f6f8fb;--card:#fff;--text:#222;--muted:#6b7280;--border:#e5e7eb;}
-    *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--text);}
-    header{background:var(--primary);color:#fff;text-align:center;padding:14px;font-weight:700;font-size:18px;}
-    .center{max-width:520px;margin:24px auto;}
-    .card{background:var(--card);padding:14px;border-radius:12px;border:1px solid var(--border);}
-    .muted{color:var(--muted)}
-    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-    .small{font-size:13px}
-
-    ul{list-style:none;padding:0;margin-top:12px;}
-    li{display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid var(--border);}
-    li:last-child{border-bottom:none}
-    li input[type="checkbox"]{transform:scale(1.2);cursor:pointer}
-    li span.text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-
-    .badge-time{font-size:12px;background:#0ea5e91a;color:#0369a1;border:1px solid #bae6fd;padding:3px 8px;border-radius:999px;cursor:pointer}
-    button{border:none;border-radius:10px;padding:10px 14px;font-size:16px;background:var(--primary);color:#fff;cursor:pointer;}
-    button.ghost{background:#fff;color:var(--primary);border:1px solid var(--primary);}
-    input[type="text"], input[type="time"]{padding:12px;border-radius:10px;border:1px solid var(--border);font-size:16px;}
-    input[type="text"]{flex:1}
-    input[type="time"]{width:98px}
-
-    /* --- Naptár + pöttyök --- */
-    .cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
-    .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
-    .dow{text-align:center;color:#6b7280;font-size:12px;padding:6px 0;}
-    .day{padding:6px 6px 10px;border-radius:10px;background:#fff;border:1px solid var(--border);text-align:right;cursor:pointer;user-select:none;display:flex;flex-direction:column;align-items:flex-end;min-height:48px;font-size:14px}
-    .day.selected{outline:2px solid var(--primary);}
-    .day.out{background:#f1f1f1;color:#bbb;}
-
-    .dots{display:flex;gap:3px;align-self:center;margin-top:4px;min-height:8px}
-    .dot{width:6px;height:6px;border-radius:50%;background:var(--primary)}
-    .dot.more{width:auto;height:auto;border-radius:6px;padding:0 4px;font-size:10px;line-height:14px;background:#0ea5e91a;color:#0369a1;border:1px solid #bae6fd}
-
-    /* --- 🔒 PIN popup --- */
-    #pinOverlay{
-      position:fixed;inset:0;
-      background:rgba(0,0,0,.4);
-      display:flex;justify-content:center;align-items:center;
-      backdrop-filter:blur(3px);
-      z-index:200;
-      animation:fade .18s ease;
-    }
-    #pinModal{
-      background:#fff;padding:20px;border-radius:14px;
-      width:90%;max-width:320px;
-      box-shadow:0 5px 15px rgba(0,0,0,.2);
-      animation:scale .18s ease;
-    }
-    #pinModal h3{margin:0 0 10px;text-align:center;}
-    #pinInput{
-      width:100%;font-size:20px;padding:10px;border-radius:10px;
-      border:2px solid var(--border);letter-spacing:8px;
-      text-align:center;
-    }
-    #pinError{color:#dc2626;font-size:13px;height:18px;text-align:center;margin-top:6px}
-    #pinBtns{display:flex;justify-content:space-between;margin-top:14px}
-    #pinBtns button{flex:1;margin:0 4px}
-
-    @keyframes fade{from{opacity:0}to{opacity:1}}
-    @keyframes scale{from{transform:scale(.85)}to{transform:scale(1)}}
-  </style>
-</head>
-
-<body>
-<header>Family Board</header>
-
-<!-- PIN kapu (első belépés) -->
-<div id="gate" class="center card">
-  <h2>PIN szükséges</h2>
-  <p class="muted">Első csatlakozáskor add meg a PIN-t.</p>
-  <div id="gateMsg" class="muted"></div>
-</div>
-
-<!-- PIN popup törléshez -->
-<div id="pinOverlay" hidden>
-  <div id="pinModal">
-    <h3>Törlés megerősítése</h3>
-    <input id="pinInput" type="password" maxlength="4" inputmode="numeric" placeholder="••••">
-    <div id="pinError"></div>
-    <div id="pinBtns">
-      <button id="pinCancel" class="ghost">Mégse</button>
-      <button id="pinOk">Törlés</button>
-    </div>
-  </div>
-</div>
-
-<!-- APP -->
-<div id="app" class="center" hidden>
-  <!-- Naptár -->
-  <div class="card">
-    <div class="cal-head">
-      <button id="prev" class="ghost">◀</button>
-      <h3 id="monthLabel">Hónap</h3>
-      <button id="next" class="ghost">▶</button>
-    </div>
-    <div class="cal-grid" id="calGrid"></div>
-  </div>
-
-  <!-- Teendők -->
-  <div class="card" style="margin-top:16px">
-    <div class="row" style="justify-content:space-between">
-      <h2 style="margin:0">📋 Teendők – <span id="taskDate" class="small muted">—</span></h2>
-      <div class="row" style="flex:0 0 auto">
-        <input type="text" id="taskInput" placeholder="Új teendő…" />
-        <input type="time" id="taskTime">
-        <button id="addTask">+</button>
-      </div>
-    </div>
-    <ul id="taskList"></ul>
-  </div>
-
-  <!-- Bevásárlólista -->
+  <!-- BEVÁSÁRLÓLISTA -->
   <div class="card" style="margin-top:16px">
     <h2>🛒 Bevásárlólista</h2>
     <div class="row">
@@ -272,8 +98,7 @@
     doc, setDoc, getDoc, collection, addDoc, query, where, onSnapshot, deleteDoc, updateDoc
   } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
-
-  /* Firebase init */
+  /* --- Firebase init --- */
   const firebaseConfig = {
     apiKey: "AIzaSyAeoxtOe5Cleasm3KdeSHP9WDR3PkU-N1I",
     authDomain: "mosas-nyilvantartas.firebaseapp.com",
@@ -288,131 +113,57 @@
   setPersistence(auth, browserLocalPersistence);
   enableIndexedDbPersistence(db).catch(()=>{});
 
-
-  /* Állapot */
-  const PIN = "2025";
+  /* Állandók */
+  const PIN="2025";
   const householdId="default";
-  const PIN_DURATION = 5*60*1000;
 
+  /* Elek */
   const pad=n=>String(n).padStart(2,"0");
   const ymd=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-  const validTime = (t)=>/^([01]\d|2[0-3]):[0-5]\d$/.test(t);
-
-
-  /* UI elemek */
   const gate=document.getElementById("gate");
   const app=document.getElementById("app");
   const gateMsg=document.getElementById("gateMsg");
   const showGate=()=>{ gate.hidden=false; app.hidden=true; };
   const showApp =()=>{ gate.hidden=true; app.hidden=false; };
+  const validTime = (t)=>/^([01]\d|2[0-3]):[0-5]\d$/.test(t);
 
-  const pinOverlay=document.getElementById("pinOverlay");
-  const pinInput=document.getElementById("pinInput");
-  const pinCancel=document.getElementById("pinCancel");
-  const pinOk=document.getElementById("pinOk");
-  const pinError=document.getElementById("pinError");
-
-  let pendingDeleteFn=null;
-
-
-  /* PIN engedélyezés */
-  function isPinAuthorized(){
-    return Number(localStorage.getItem("pinAuthorizedUntil")||0) > Date.now();
-  }
-  function setPinAuthorized(){
-    localStorage.setItem("pinAuthorizedUntil", Date.now() + PIN_DURATION);
-  }
-
-  function askDeleteWithPIN(deleteFn){
-    if(isPinAuthorized()){
-      deleteFn();
-      return;
-    }
-    pendingDeleteFn = deleteFn;
-    pinInput.value="";
-    pinError.textContent="";
-    pinOverlay.hidden = false;
-    pinInput.focus();
-  }
-
-  pinCancel.onclick=()=>{
-    pendingDeleteFn = null;
-    pinOverlay.hidden = true;
-  };
-  pinOverlay.onclick=e=>{
-    if(e.target===pinOverlay)pinCancel.onclick();
-  };
-  document.addEventListener("keydown",e=>{
-    if(e.key==="Escape"&&!pinOverlay.hidden)pinCancel.onclick();
-  });
-
-  pinOk.onclick=()=>{
-    if(pinInput.value===PIN){
-      setPinAuthorized();
-      pinOverlay.hidden = true;
-      if(pendingDeleteFn) pendingDeleteFn();
-    } else {
-      pinError.textContent="Helytelen PIN!";
-      navigator.vibrate?.(80);
-    }
-  };
-
-
-  /* Auth + első PIN */
+  /* --- Auth + PIN kapu --- */
   onAuthStateChanged(auth, async(u)=>{
     if(!u){ showGate(); await signInAnonymously(auth); return; }
-
     const ref = doc(db,`households/${householdId}/members/${u.uid}`);
     const snap = await getDoc(ref);
-
-    // ✅ induláskor popup reset
-    pinOverlay.hidden = true;
-    pendingDeleteFn = null;
-
-    if(snap.exists()){
-      showApp();
-      boot();
-      return;
-    }
-
+    if(snap.exists()){ showApp(); boot(); return; }
     showGate();
     const pin = prompt("Háztartás PIN:");
     if(pin!==PIN){ gateMsg.textContent="Hibás PIN!"; return; }
-
-    await setDoc(ref,{joinedAt:Date.now()});
-    showApp();
-    boot();
+    await setDoc(ref,{ok:true, joinedAt:Date.now()});
+    showApp(); boot();
   });
 
-
-  /* ----- Naptár logika + pöttyök ----- */
+  /* --- Naptár + pöttyök --- */
   const calGrid=document.getElementById("calGrid");
   const monthLabel=document.getElementById("monthLabel");
   const taskDateEl=document.getElementById("taskDate");
-
   let current=new Date();
   let cm=current.getMonth(), cy=current.getFullYear();
   let selectedYMD = ymd(current);
 
   let taskCounts = new Map();
-  let unsubTaskCounts=null;
-
+  let unsubTaskCounts = null;
 
   function subscribeTaskCounts(){
-    if(unsubTaskCounts)unsubTaskCounts();
-    unsubTaskCounts = onSnapshot(collection(db,
-      `households/${householdId}/tasks`), snap=>{
-        const counts=new Map();
-        snap.forEach(d=>{
-          const dt=d.data().date;
-          if(!dt)return;
-          counts.set(dt,(counts.get(dt)||0)+1);
-        });
-        taskCounts = counts;
-        renderCalendar();
+    if (unsubTaskCounts) unsubTaskCounts();
+    unsubTaskCounts = onSnapshot(collection(db, `households/${householdId}/tasks`), snap=>{
+      const counts = new Map();
+      snap.forEach(d=>{
+        const data = d.data();
+        if(!data.date) return;
+        counts.set(data.date, (counts.get(data.date)||0) + 1);
+      });
+      taskCounts = counts;
+      renderCalendar();
     });
   }
-
 
   function renderCalendar(){
     calGrid.innerHTML="";
@@ -420,9 +171,7 @@
     monthLabel.textContent=`${cy}. ${f.toLocaleString("hu-HU",{month:"long"})}`;
 
     ["H","K","Sze","Cs","P","Szo","V"].forEach(d=>{
-      const el=document.createElement("div");
-      el.className="dow";
-      el.textContent=d;
+      const el=document.createElement("div"); el.className="dow"; el.textContent=d;
       calGrid.appendChild(el);
     });
 
@@ -436,12 +185,12 @@
     const days=new Date(cy,cm+1,0).getDate();
     for(let d=1; d<=days; d++){
       const el=document.createElement("div");
-      const dt=new Date(cy,cm,d);
-      const dayYMD=ymd(dt);
-      el.className="day"+(dayYMD===selectedYMD?" selected":"");
+      const dateObj=new Date(cy,cm,d);
+      const dayYMD = ymd(dateObj);
+      el.className="day" + (dayYMD===selectedYMD ? " selected":"");
       el.textContent=d;
 
-      const c=taskCounts.get(dayYMD)||0;
+      const c = taskCounts.get(dayYMD) || 0;
       const dots=document.createElement("div");
       dots.className="dots";
       if(c>0){
@@ -454,164 +203,147 @@
         if(c>3){
           const more=document.createElement("span");
           more.className="dot more";
-          more.textContent=`+${c-3}`;
+          more.textContent = `+${c-3}`;
           dots.appendChild(more);
         }
       }
-      el.append(dots);
+      el.appendChild(dots);
+
       el.onclick=()=>{ selectedYMD=dayYMD; renderCalendar(); updateTaskDate(); subscribeTasks(); };
       calGrid.appendChild(el);
     }
   }
-
   prev.onclick=()=>{ cm--; if(cm<0){cm=11;cy--;} renderCalendar(); };
   next.onclick=()=>{ cm++; if(cm>11){cm=0; cy++;} renderCalendar(); };
+  function updateTaskDate(){ taskDateEl.textContent = selectedYMD; }
 
-  function updateTaskDate(){
-    taskDateEl.textContent=selectedYMD;
-  }
-  /* ----- Teendők ----- */
+  /* --- Teendők --- */
   const taskInput=document.getElementById("taskInput");
   const taskTime=document.getElementById("taskTime");
   const addTask=document.getElementById("addTask");
   const taskList=document.getElementById("taskList");
   let unsubTasks=null;
 
-  const minutes = (t)=>{
+  const minutes=t=>{
     if(!t || !validTime(t)) return 1e9;
-    const [h,m]=t.split(":").map(Number);
-    return h*60+m;
-  };
+    const [h,m] = t.split(":").map(Number);
+    return h*60 + m;
+  }
 
   function subscribeTasks(){
     if(unsubTasks) unsubTasks();
-    const qref = query(
-      collection(db,`households/${householdId}/tasks`),
-      where("date","==",selectedYMD)
-    );
+    const qref = query(collection(db, `households/${householdId}/tasks`),
+      where("date","==",selectedYMD));
     unsubTasks = onSnapshot(qref, snap=>{
-      const items=[];
-      snap.forEach(s=>items.push({id:s.id, ...s.data()}));
-      items.sort((a,b)=>{
+      const arr=[];
+      snap.forEach(s=>arr.push({id:s.id, ...s.data()}));
+      arr.sort((a,b)=>{
         if(!!a.done !== !!b.done) return a.done ? 1 : -1;
-        const am=minutes(a.time), bm=minutes(b.time);
-        if(am!==bm) return am-bm;
+        if(minutes(a.time) !== minutes(b.time))
+          return minutes(a.time) - minutes(b.time);
         return (a.createdAt||0) - (b.createdAt||0);
       });
-      renderTasks(items);
+      renderTasks(arr);
     });
   }
 
   function renderTasks(items){
     taskList.innerHTML="";
     if(!items.length){
-      taskList.innerHTML = "<li><span class='text muted'>Nincs teendő ezen a napon.</span></li>";
+      taskList.innerHTML="<li><span class='text muted'>Nincs teendő ezen a napon.</span></li>";
       return;
     }
     for(const t of items){
       const li=document.createElement("li");
-
       const cb=document.createElement("input");
       cb.type="checkbox"; cb.checked=!!t.done;
-      cb.onchange=()=>updateDoc(doc(db,`households/${householdId}/tasks/${t.id}`),{done:cb.checked});
 
       const timeBadge=document.createElement("span");
       timeBadge.className="badge-time";
-      timeBadge.textContent=(t.time && validTime(t.time))?`🕒 ${t.time}`:"—";
-      timeBadge.title="Idő módosítása";
-      timeBadge.onclick=async()=>{
-        const nv=prompt("Idő (HH:MM, üres = nincs)", t.time||"");
+      timeBadge.textContent = t.time && validTime(t.time) ? `🕒 ${t.time}` : "—";
+      timeBadge.onclick = async()=>{
+        const nv=prompt("Idő (HH:MM, üres = nincs)", t.time || "");
         if(nv===null) return;
-        let v=(nv||"").trim();
-        if(v && !validTime(v)) { alert("Hibás idő! (HH:MM)"); return; }
+        let v=nv.trim();
+        if(v && !validTime(v)){ alert("Hibás idő!"); return; }
         await updateDoc(doc(db,`households/${householdId}/tasks/${t.id}`),{time:v});
       };
 
-      const txt=document.createElement("span");
-      txt.className="text";
-      txt.textContent=t.text;
-      if(cb.checked) txt.style.textDecoration="line-through";
+      const span=document.createElement("span");
+      span.className="text"; span.textContent=t.text;
+      if(cb.checked) span.style.textDecoration="line-through";
+
+      cb.onchange=()=>updateDoc(
+        doc(db,`households/${householdId}/tasks/${t.id}`),
+        {done:cb.checked});
 
       const del=document.createElement("button");
-      del.className="ghost";
-      del.textContent="🗑️";
-      del.onclick=()=>askDeleteWithPIN(()=>deleteDoc(doc(db,`households/${householdId}/tasks/${t.id}`)));
+      del.className="ghost"; del.textContent="🗑️";
+      del.onclick=()=>deleteDoc(doc(db,`households/${householdId}/tasks/${t.id}`));
 
-      li.append(cb,timeBadge,txt,del);
+      li.append(cb,timeBadge,span,del);
       taskList.append(li);
     }
   }
 
   addTask.onclick=async()=>{
-    const text=(taskInput.value||"").trim();
+    const text=taskInput.value.trim();
     let time=(taskTime.value||"").trim();
-    if(time && !validTime(time)){ alert("Hibás idő! (HH:MM)"); return; }
+    if(time && !validTime(time)) return alert("Hibás idő!");
     if(!text) return;
     await addDoc(collection(db,`households/${householdId}/tasks`),{
-      text, time: time||"", done:false, date:selectedYMD, createdAt:Date.now()
+      text,time:time||"",done:false,date:selectedYMD,
+      createdAt:Date.now()
     });
     taskInput.value=""; taskTime.value="";
   };
 
-
-  /* ----- Bevásárlólista ----- */
+  /* --- Bevásárlólista --- */
   const shopInput=document.getElementById("shopInput");
   const addItem=document.getElementById("addItem");
   const shopList=document.getElementById("shopList");
 
   onSnapshot(query(collection(db,`households/${householdId}/shopping`)), snap=>{
+    shopList.innerHTML="";
     const arr=[];
     snap.forEach(d=>arr.push({id:d.id, ...d.data()}));
-
-    // Stabil rendezés: nem kész elöl, majd createdAt (ha nincs, a végére)
     arr.sort((a,b)=>{
       if(!!a.done !== !!b.done) return a.done ? 1 : -1;
-      const ac=a.createdAt ?? Number.MAX_SAFE_INTEGER;
-      const bc=b.createdAt ?? Number.MAX_SAFE_INTEGER;
+      const ac = (a.createdAt ?? Number.MAX_SAFE_INTEGER);
+      const bc = (b.createdAt ?? Number.MAX_SAFE_INTEGER);
       return ac - bc;
     });
-
-    shopList.innerHTML="";
     if(!arr.length){
-      shopList.innerHTML = "<li><span class='text muted'>Nincs tétel.</span></li>";
+      shopList.innerHTML="<li><span class='text muted'>Nincs tétel.</span></li>";
       return;
     }
-
     arr.forEach(item=>{
       const li=document.createElement("li");
-
       const cb=document.createElement("input");
       cb.type="checkbox"; cb.checked=item.done||false;
-      cb.onchange=()=>updateDoc(doc(db,`households/${householdId}/shopping/${item.id}`),{
-        done:cb.checked, createdAt: item.createdAt || Date.now()
-      });
-
       const txt=document.createElement("span");
-      txt.className="text";
-      txt.textContent=item.text || "(névtelen tétel)";
+      txt.className="text"; txt.textContent=item.text;
       if(cb.checked) txt.style.textDecoration="line-through";
-
+      cb.onchange=()=>updateDoc(
+        doc(db,`households/${householdId}/shopping/${item.id}`),
+        {done:cb.checked, createdAt:item.createdAt||Date.now()});
       const del=document.createElement("button");
-      del.className="ghost";
-      del.textContent="🗑️";
-      del.onclick=()=>askDeleteWithPIN(()=>deleteDoc(doc(db,`households/${householdId}/shopping/${item.id}`)));
-
+      del.className="ghost"; del.textContent="🗑️";
+      del.onclick=()=>deleteDoc(doc(db,`households/${householdId}/shopping/${item.id}`));
       li.append(cb,txt,del);
-      shopList.append(li);
+      shopList.appendChild(li);
     });
   });
 
   addItem.onclick=async()=>{
-    const text=(shopInput.value||"").trim();
+    const text=shopInput.value.trim();
     if(!text) return;
     await addDoc(collection(db,`households/${householdId}/shopping`),{
-      text, done:false, createdAt:Date.now()
+      text,done:false,createdAt:Date.now()
     });
     shopInput.value="";
   };
 
-
-  /* ----- Indítás ----- */
   function boot(){
     selectedYMD = ymd(new Date());
     updateTaskDate();
@@ -622,10 +354,9 @@
 </script>
 
 <script>
-  // PWA service worker
-  if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('./sw.js?v=11e-fix');
-  }
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js?v=11d-final');
+}
 </script>
 
 </body>
