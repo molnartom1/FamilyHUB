@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#0ea5e9">
-  <title>FamilyBoard v11</title>
-  <link rel="manifest" href="./manifest.webmanifest?v=11">
+  <title>FamilyBoard v11b</title>
+  <link rel="manifest" href="./manifest.webmanifest?v=11b">
   <style>
     :root{--primary:#0ea5e9;--bg:#f6f8fb;--card:#fff;--text:#222;--muted:#6b7280;--border:#e5e7eb;}
     *{box-sizing:border-box}
@@ -57,7 +57,7 @@
     <div class="cal-grid" id="calGrid"></div>
   </div>
 
-  <!-- TEENDŐK (visszaépítve) -->
+  <!-- TEENDŐK -->
   <div class="card" style="margin-top:16px">
     <div class="row" style="justify-content:space-between">
       <h2 style="margin:0">📋 Teendők – <span id="taskDate" class="small muted">—</span></h2>
@@ -86,7 +86,7 @@
   import { getAuth, onAuthStateChanged, signInAnonymously, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
   import {
     getFirestore, enableIndexedDbPersistence,
-    doc, setDoc, getDoc, collection, addDoc, query, where, orderBy, onSnapshot, deleteDoc, updateDoc
+    doc, setDoc, getDoc, collection, addDoc, query, where, onSnapshot, deleteDoc, updateDoc
   } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
   // --- Firebase ---
@@ -102,7 +102,7 @@
   const auth = getAuth();
   const db = getFirestore();
   setPersistence(auth, browserLocalPersistence);
-  enableIndexedDbPersistence(db).catch(()=>{}); // offline-opció
+  enableIndexedDbPersistence(db).catch(()=>{}); // offline
 
   // --- Állandók ---
   const PIN="2025";
@@ -143,7 +143,6 @@
     const f=new Date(cy,cm,1);
     monthLabel.textContent=`${cy}. ${f.toLocaleString("hu-HU",{month:"long"})}`;
 
-    // DOW fejlécek
     ["H","K","Sze","Cs","P","Szo","V"].forEach(d=>{
       const el=document.createElement("div"); el.className="dow"; el.textContent=d; calGrid.appendChild(el);
     });
@@ -167,7 +166,7 @@
 
   function updateTaskDate(){ taskDateEl.textContent = selectedYMD; }
 
-  // --- Teendők (szöveg + pipálás) ---
+  // --- Teendők (onSnapshot + kliens rendezés, mint shoppingnál) ---
   const taskInput=document.getElementById("taskInput");
   const addTask=document.getElementById("addTask");
   const taskList=document.getElementById("taskList");
@@ -175,14 +174,20 @@
 
   function subscribeTasks(){
     if(unsubTasks) unsubTasks();
-    const qref=query(
-      collection(db,`households/${householdId}/tasks`),
-      where("date","==",selectedYMD),
-      orderBy("createdAt","asc")
+    const qref = query(
+      collection(db, `households/${householdId}/tasks`),
+      where("date","==",selectedYMD)  // NINCS orderBy -> NEM kell index
     );
     unsubTasks = onSnapshot(qref, snap=>{
       const items=[];
       snap.forEach(s=>items.push({id:s.id, ...s.data()}));
+      // kliens oldali rendezés: nem kész felül, majd createdAt
+      items.sort((a,b)=>{
+        if(!!a.done === !!b.done){
+          return (a.createdAt||0) - (b.createdAt||0);
+        }
+        return a.done ? 1 : -1;
+      });
       renderTasks(items);
     });
   }
@@ -198,8 +203,6 @@
       taskList.append(li);
       return;
     }
-    // nem kész felül, kész alul
-    items.sort((a,b)=>(a.done===b.done)?0:(a.done?1:-1));
     for(const t of items){
       const li=document.createElement("li");
       const cb=document.createElement("input");
@@ -207,13 +210,10 @@
       const span=document.createElement("span");
       span.className="text"; span.textContent=t.text;
       if(cb.checked) span.style.textDecoration="line-through";
-
       cb.onchange=()=> updateDoc(doc(db,`households/${householdId}/tasks/${t.id}`), {done:cb.checked});
-
       const del=document.createElement("button");
       del.className="ghost"; del.textContent="🗑️";
       del.onclick=()=> deleteDoc(doc(db,`households/${householdId}/tasks/${t.id}`));
-
       li.append(cb,span,del);
       taskList.append(li);
     }
@@ -228,17 +228,25 @@
     taskInput.value="";
   };
 
-  // --- Bevásárlólista (checkbox marad) ---
+  // --- Bevásárlólista (változatlan, checkbox-szal) ---
   const shopInput=document.getElementById("shopInput");
   const addItem=document.getElementById("addItem");
   const shopList=document.getElementById("shopList");
 
   function subscribeShopping(){
-    const q=query(collection(db,`households/${householdId}/shopping`),orderBy("createdAt"));
+    const q=query(collection(db,`households/${householdId}/shopping`));
     onSnapshot(q,snap=>{
       shopList.innerHTML="";
-      snap.forEach(docSnap=>{
-        const item=docSnap.data();
+      const arr=[];
+      snap.forEach(d=>arr.push({id:d.id, ...d.data()}));
+      // kliens oldali rendezés: nem kész felül, majd createdAt
+      arr.sort((a,b)=>{
+        if(!!a.done === !!b.done){
+          return (a.createdAt||0) - (b.createdAt||0);
+        }
+        return a.done ? 1 : -1;
+      });
+      arr.forEach(item=>{
         const li=document.createElement("li");
         const cb=document.createElement("input");
         cb.type="checkbox"; cb.checked=item.done||false;
@@ -246,25 +254,16 @@
         txt.className="text";
         txt.textContent=item.text;
         if(cb.checked) txt.style.textDecoration="line-through";
-        cb.onchange=()=> updateDoc(doc(db,`households/${householdId}/shopping/${docSnap.id}`),{done:cb.checked});
+        cb.onchange=()=> updateDoc(doc(db,`households/${householdId}/shopping/${item.id}`),{done:cb.checked});
         const del=document.createElement("button");
         del.textContent="🗑️"; del.className="ghost";
-        del.onclick=()=>deleteDoc(doc(db,`households/${householdId}/shopping/${docSnap.id}`));
+        del.onclick=()=>deleteDoc(doc(db,`households/${householdId}/shopping/${item.id}`));
         li.append(cb,txt,del);
         shopList.appendChild(li);
       });
     });
   }
 
-  addItem.onclick=async()=>{
-    const text=shopInput.value.trim(); if(!text) return;
-    await addDoc(collection(db,`households/${householdId}/shopping`),{
-      text, done:false, createdAt:Date.now()
-    });
-    shopInput.value="";
-  };
-
-  // --- boot ---
   function boot(){
     selectedYMD = ymd(new Date());
     updateTaskDate();
@@ -276,7 +275,7 @@
 
 <script>
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./sw.js?v=11');
+  navigator.serviceWorker.register('./sw.js?v=11b');
 }
 </script>
 
