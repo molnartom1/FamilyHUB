@@ -1,3 +1,20 @@
+# Create corrected FamilyBoard PWA (v6) with the time validation fix and package as ZIP
+
+import os, zipfile, shutil, textwrap
+from pathlib import Path
+from PIL import Image, ImageDraw
+
+root = Path("/mnt/data/familyboard_pwa_v6_fix")
+if root.exists():
+    shutil.rmtree(root)
+root.mkdir(parents=True, exist_ok=True)
+
+def write(rel, content):
+    p = root / rel
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(textwrap.dedent(content).lstrip("\n"), encoding="utf-8")
+
+index_html = r"""
 <!DOCTYPE html>
 <html lang="hu">
 <head>
@@ -6,9 +23,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#0ea5e9">
-  <link rel="manifest" href="./manifest.webmanifest?v=5">
+  <link rel="manifest" href="./manifest.webmanifest?v=6">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <title>FamilyBoard – PIN & Firebase Sync (v5)</title>
+  <title>FamilyBoard – PIN & Firebase Sync (v6)</title>
   <style>
     :root{--primary:#0ea5e9;--bg:#f6f8fb;--card:#fff;--text:#222;--muted:#6b7280;--border:#e5e7eb;
       --inset-top:env(safe-area-inset-top,0px);--inset-right:env(safe-area-inset-right,0px);
@@ -45,7 +62,7 @@
   </style>
 </head>
 <body>
-  <header>🔐 FamilyBoard – PIN & Firebase Sync (v5)</header>
+  <header>🔐 FamilyBoard – PIN & Firebase Sync (v6)</header>
 
   <div id="gate" class="center card">
     <h2>Csatlakozás a családi táblához</h2>
@@ -222,8 +239,11 @@
       }
     }
 
+    // *** FIX: csak akkor validáljuk az időt, ha ténylegesen van megadva ***
     addTask.onclick=async()=>{
-      const text=ti.value.trim(); let time=tt.value.trim();
+      const text=ti.value.trim(); 
+      let time=tt.value.trim();
+      if(!text) return;
       if(time !== "" && !validTime(time)) return alert('Érvénytelen idő (HH:MM)');
       await addDoc(collection(db,`households/${householdId}/tasks`), { text, time: time||"", done:false, date:selected, createdAt: Date.now() });
       ti.value=''; tt.value='';
@@ -272,8 +292,85 @@
 
     // SW
     if('serviceWorker' in navigator){
-      window.addEventListener('load', ()=> navigator.serviceWorker.register('./sw.js?v=5').catch(()=>{}));
+      window.addEventListener('load', ()=> navigator.serviceWorker.register('./sw.js?v=6').catch(()=>{}));
     }
   </script>
 </body>
 </html>
+"""
+write("index.html", index_html)
+
+write("manifest.webmanifest", """
+{
+  "name": "FamilyBoard",
+  "short_name": "FamilyBoard",
+  "start_url": "./?v=6",
+  "display": "standalone",
+  "background_color": "#0ea5e9",
+  "theme_color": "#0ea5e9",
+  "icons": [
+    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
+""")
+
+write("sw.js", """
+const CACHE = 'familyboard-v6';
+const ASSETS = [
+  './',
+  './index.html?v=6',
+  './manifest.webmanifest?v=6',
+  './icons/icon-192.png',
+  './icons/icon-512.png'
+];
+
+self.addEventListener('install', (e)=>{
+  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)));
+  self.skipWaiting();
+});
+self.addEventListener('activate', (e)=>{
+  e.waitUntil((async ()=>{
+    const keys = await caches.keys();
+    await Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)));
+    await self.clients.claim();
+  })());
+});
+self.addEventListener('fetch', (e)=>{
+  if(e.request.method!=='GET') return;
+  e.respondWith((async ()=>{
+    const cached = await caches.match(e.request);
+    try{
+      const fresh = await fetch(e.request);
+      const c = await caches.open(CACHE);
+      c.put(e.request, fresh.clone());
+      return fresh;
+    }catch{
+      return cached || Response.error();
+    }
+  })());
+});
+""")
+
+# icons
+icons = root / "icons"
+icons.mkdir(parents=True, exist_ok=True)
+def make_icon(size):
+    img = Image.new("RGBA", (size, size), (14,165,233,255))
+    d = ImageDraw.Draw(img)
+    r = int(size*0.8)
+    m = int(size*0.1)
+    d.ellipse((m, m, size-m, size-m), fill=(255,255,255,255))
+    d.text((int(size*0.42), int(size*0.35)), "F", fill=(14,165,233,255))
+    img.save(icons / f"icon-{size}.png")
+make_icon(192); make_icon(512)
+
+zip_path = "/mnt/data/FamilyBoard_PWA_v6_PIN_sync.zip"
+if os.path.exists(zip_path):
+    os.remove(zip_path)
+with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
+    for path, _, files in os.walk(root):
+        for f in files:
+            fp = Path(path) / f
+            z.write(fp, arcname=str(fp.relative_to(root)))
+zip_path
