@@ -1,10 +1,8 @@
-const CACHE = 'familyboard-v9';
+const CACHE = 'familyboard-v10';
 const ASSETS = [
   './',
-  './index.html?v=9',
-  './manifest.webmanifest?v=9',
-  './icons/icon-192.png',
-  './icons/icon-512.png'
+  './index.html?v=10',
+  './manifest.webmanifest?v=10'
 ];
 
 self.addEventListener('install', (e)=>{
@@ -28,7 +26,7 @@ self.addEventListener('fetch', (e)=>{
       c.put(e.request, fresh.clone());
       return fresh;
     }catch{
-      return cached || cached || Response.error();
+      return cached || Response.error();
     }
   })());
 });
