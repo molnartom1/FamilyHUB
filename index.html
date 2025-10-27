@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#0ea5e9">
-  <title>FamilyBoard v11b</title>
-  <link rel="manifest" href="./manifest.webmanifest?v=11b">
+  <title>FamilyBoard v11c</title>
+  <link rel="manifest" href="./manifest.webmanifest?v=11c">
   <style>
     :root{--primary:#0ea5e9;--bg:#f6f8fb;--card:#fff;--text:#222;--muted:#6b7280;--border:#e5e7eb;}
     *{box-sizing:border-box}
@@ -20,9 +20,12 @@
     li:last-child{border-bottom:none}
     li input[type="checkbox"]{transform:scale(1.2);cursor:pointer}
     li span.text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .badge-time{font-size:12px;background:#0ea5e91a;color:#0369a1;border:1px solid #bae6fd;padding:3px 8px;border-radius:999px}
     button{border:none;border-radius:10px;padding:10px 14px;font-size:16px;background:var(--primary);color:#fff;cursor:pointer;}
     button.ghost{background:#fff;color:var(--primary);border:1px solid var(--primary);}
-    input[type="text"]{padding:12px;border-radius:10px;border:1px solid var(--border);font-size:16px;flex:1}
+    input[type="text"], input[type="time"]{padding:12px;border-radius:10px;border:1px solid var(--border);font-size:16px;}
+    input[type="text"]{flex:1}
+    input[type="time"]{width:98px}
 
     .cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
     .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
@@ -30,7 +33,7 @@
     .day{padding:10px;border-radius:10px;background:#fff;border:1px solid var(--border);text-align:right;cursor:pointer;user-select:none}
     .day.out{background:#f1f1f1;color:#bbb;}
     .day.selected{outline:2px solid var(--primary);}
-    .row{display:flex;gap:8px;align-items:center}
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
     .small{font-size:13px}
   </style>
 </head>
@@ -57,12 +60,13 @@
     <div class="cal-grid" id="calGrid"></div>
   </div>
 
-  <!-- TEENDŐK -->
+  <!-- TEENDŐK időponttal -->
   <div class="card" style="margin-top:16px">
     <div class="row" style="justify-content:space-between">
       <h2 style="margin:0">📋 Teendők – <span id="taskDate" class="small muted">—</span></h2>
       <div class="row" style="flex:0 0 auto">
         <input type="text" id="taskInput" placeholder="Új teendő…" />
+        <input type="time" id="taskTime" aria-label="Idő (HH:MM)">
         <button id="addTask" title="Hozzáadás">+</button>
       </div>
     </div>
@@ -117,6 +121,8 @@
   const showGate=()=>{ gate.hidden=false; app.hidden=true; };
   const showApp =()=>{ gate.hidden=true; app.hidden=false; };
 
+  const validTime = (t)=>/^([01]\d|2[0-3]):[0-5]\d$/.test(t);
+
   // --- Auth + PIN kapu ---
   onAuthStateChanged(auth, async(u)=>{
     if(!u){ showGate(); await signInAnonymously(auth); return; }
@@ -166,27 +172,34 @@
 
   function updateTaskDate(){ taskDateEl.textContent = selectedYMD; }
 
-  // --- Teendők (onSnapshot + kliens rendezés, mint shoppingnál) ---
+  // --- Teendők (időponttal) ---
   const taskInput=document.getElementById("taskInput");
+  const taskTime=document.getElementById("taskTime");
   const addTask=document.getElementById("addTask");
   const taskList=document.getElementById("taskList");
   let unsubTasks=null;
+
+  function minutes(t){
+    if(!t || !validTime(t)) return 1e9; // üres vagy hibás → a lista végére
+    const [h,m] = t.split(":").map(Number);
+    return h*60 + m;
+  }
 
   function subscribeTasks(){
     if(unsubTasks) unsubTasks();
     const qref = query(
       collection(db, `households/${householdId}/tasks`),
-      where("date","==",selectedYMD)  // NINCS orderBy -> NEM kell index
+      where("date","==",selectedYMD)   // nincs orderBy -> nem kell index
     );
     unsubTasks = onSnapshot(qref, snap=>{
       const items=[];
       snap.forEach(s=>items.push({id:s.id, ...s.data()}));
-      // kliens oldali rendezés: nem kész felül, majd createdAt
+      // rendezés: nem kész felül, időpont szerint, majd createdAt
       items.sort((a,b)=>{
-        if(!!a.done === !!b.done){
-          return (a.createdAt||0) - (b.createdAt||0);
-        }
-        return a.done ? 1 : -1;
+        if(!!a.done !== !!b.done) return a.done ? 1 : -1;
+        const am = minutes(a.time), bm = minutes(b.time);
+        if(am !== bm) return am - bm;
+        return (a.createdAt||0) - (b.createdAt||0);
       });
       renderTasks(items);
     });
@@ -207,25 +220,45 @@
       const li=document.createElement("li");
       const cb=document.createElement("input");
       cb.type="checkbox"; cb.checked=!!t.done;
+
+      const timeBadge=document.createElement("button");
+      timeBadge.className="ghost badge-time";
+      timeBadge.textContent = t.time && validTime(t.time) ? `🕒 ${t.time}` : "—";
+      timeBadge.title = "Idő módosítása";
+      timeBadge.onclick = async ()=>{
+        const nv = prompt("Idő (HH:MM, üres = nincs)", t.time || "");
+        if(nv===null) return;
+        let v = (nv||"").trim();
+        if(v==="--:--" || v.replace(/[-_: ]/g,"")==="") v="";
+        if(v!=="" && !validTime(v)) { alert("Érvénytelen idő (HH:MM)"); return; }
+        await updateDoc(doc(db,`households/${householdId}/tasks/${t.id}`), { time: v });
+      };
+
       const span=document.createElement("span");
       span.className="text"; span.textContent=t.text;
       if(cb.checked) span.style.textDecoration="line-through";
+
       cb.onchange=()=> updateDoc(doc(db,`households/${householdId}/tasks/${t.id}`), {done:cb.checked});
+
       const del=document.createElement("button");
       del.className="ghost"; del.textContent="🗑️";
       del.onclick=()=> deleteDoc(doc(db,`households/${householdId}/tasks/${t.id}`));
-      li.append(cb,span,del);
+
+      li.append(cb,timeBadge,span,del);
       taskList.append(li);
     }
   }
 
   addTask.onclick=async()=>{
     const text=taskInput.value.trim();
+    let time=(taskTime.value||"").trim();
+    if(time==="--:--" || time.replace(/[-_: ]/g,"")==="") time="";
+    if(time!=="" && !validTime(time)){ alert("Érvénytelen idő (HH:MM)"); return; }
     if(!text) return;
     await addDoc(collection(db,`households/${householdId}/tasks`),{
-      text, done:false, date:selectedYMD, createdAt:Date.now()
+      text, time: time || "", done:false, date:selectedYMD, createdAt:Date.now()
     });
-    taskInput.value="";
+    taskInput.value=""; taskTime.value="";
   };
 
   // --- Bevásárlólista (változatlan, checkbox-szal) ---
@@ -275,7 +308,7 @@
 
 <script>
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./sw.js?v=11b');
+  navigator.serviceWorker.register('./sw.js?v=11c');
 }
 </script>
 
