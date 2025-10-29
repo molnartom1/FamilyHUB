@@ -17,22 +17,17 @@
     .muted{color:var(--muted)}
     .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
     .small{font-size:13px}
-
     ul{list-style:none;padding:0;margin-top:12px;}
     li{display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid var(--border);}
     li:last-child{border-bottom:none}
     li input[type="checkbox"]{transform:scale(1.2);cursor:pointer}
     li span.text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-
     .badge-time{font-size:12px;background:#0ea5e91a;color:#0369a1;border:1px solid #bae6fd;padding:3px 8px;border-radius:999px;cursor:pointer}
-
     button{border:none;border-radius:10px;padding:10px 14px;font-size:16px;background:var(--primary);color:#fff;cursor:pointer;}
     button.ghost{background:#fff;color:#0ea5e9;border:1px solid #0ea5e9;}
     input[type="text"], input[type="time"]{padding:12px;border-radius:10px;border:1px solid var(--border);font-size:16px;}
     input[type="text"]{flex:1}
     input[type="time"]{width:98px}
-
-    /* Naptár + pöttyök */
     .cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
     .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
     .dow{text-align:center;color:#6b7280;font-size:12px;padding:6px 0;}
@@ -47,7 +42,6 @@
 
 <body>
 <header>Family Board</header>
-
 <!-- PIN kapu -->
 <div id="gate" class="center card">
   <h2>PIN szükséges</h2>
@@ -66,7 +60,6 @@
     </div>
     <div class="cal-grid" id="calGrid"></div>
   </div>
-
   <!-- TEENDŐK időponttal -->
   <div class="card" style="margin-top:16px">
     <div class="row" style="justify-content:space-between">
@@ -79,7 +72,6 @@
     </div>
     <ul id="taskList"></ul>
   </div>
-
   <!-- BEVÁSÁRLÓLISTA -->
   <div class="card" style="margin-top:16px">
     <h2>🛒 Bevásárlólista</h2>
@@ -329,7 +321,14 @@
         {done:cb.checked, createdAt:item.createdAt||Date.now()});
       const del=document.createElement("button");
       del.className="ghost"; del.textContent="🗑️";
-      del.onclick=()=>deleteDoc(doc(db,`households/${householdId}/shopping/${item.id}`));
+      del.onclick=()=>{
+        const pin = prompt("Törléshez add meg a PIN kódot:");
+        if (pin !== PIN) {
+          alert("Hibás PIN! Nem törölhető.");
+          return;
+        }
+        deleteDoc(doc(db,`households/${householdId}/shopping/${item.id}`));
+      };
       li.append(cb,txt,del);
       shopList.appendChild(li);
     });
@@ -358,6 +357,5 @@ if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js?v=11d-final');
 }
 </script>
-
 </body>
 </html>
