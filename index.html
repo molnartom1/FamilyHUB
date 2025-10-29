@@ -271,7 +271,14 @@
 
       const del=document.createElement("button");
       del.className="ghost"; del.textContent="🗑️";
-      del.onclick=()=>deleteDoc(doc(db,`households/${householdId}/tasks/${t.id}`));
+      del.onclick=()=>{
+        const pin = prompt("Törléshez add meg a PIN kódot:");
+        if (pin !== PIN) {
+          alert("Hibás PIN! Nem törölhető.");
+          return;
+        }
+        deleteDoc(doc(db,`households/${householdId}/tasks/${t.id}`));
+      };
 
       li.append(cb,timeBadge,span,del);
       taskList.append(li);
