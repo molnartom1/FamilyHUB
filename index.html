@@ -2,587 +2,604 @@
 <html lang="hu">
 
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="theme-color" content="#0ea5e9" />
-  <title>FamilyBoard v11d-final</title>
-  <link rel="manifest" href="./manifest.webmanifest?v=11d-final" />
-  <style>
-    :root {
-      /* Világos mód színei */
-      --primary: #0ea5e9;
-      --bg: #f6f8fb;
-      --card: #fff;
-      --text: #222;
-      --muted: #6b7280;
-      --border: #e5e7eb;
-    }
-
-    [data-theme="dark"] {
-      /* Sötét mód színei */
-      --primary: #9cf;
-      --bg: #121212;
-      --card: #1e1e1e;
-      --text: #eee;
-      --muted: #aaa;
-      --border: #333;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      background: var(--bg);
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      color: var(--text);
-      transition: background 0.3s, color 0.3s;
-    }
-
-    header {
-      background: var(--primary);
-      color: #fff;
-      text-align: center;
-      padding: 14px;
-      font-weight: 700;
-      font-size: 18px;
-      user-select: none;
-    }
-
-    .center {
-      max-width: 520px;
-      margin: 24px auto;
-      padding: 0 10px;
-    }
-
-    .card {
-      background: var(--card);
-      padding: 14px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      margin-bottom: 20px;
-    }
-
-    .muted {
-      color: var(--muted);
-    }
-
-    input[type="text"],
-    input[type="time"],
-    select {
-      padding: 12px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      font-size: 16px;
-    }
-
-    input[type="text"] {
-      flex: 1;
-    }
-
-    input[type="time"],
-    select {
-      width: 120px;
-    }
-
-    .row {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    button {
-      border: none;
-      border-radius: 10px;
-      padding: 10px 14px;
-      font-size: 16px;
-      background: var(--primary);
-      color: #fff;
-      cursor: pointer;
-      user-select: none;
-      transition: background 0.3s;
-    }
-
-    button:hover {
-      background: #0b78c5;
-    }
-
-    button.ghost {
-      background: #fff;
-      color: var(--primary);
-      border: 1px solid var(--primary);
-    }
-
-    ul {
-      list-style: none;
-      padding: 0;
-      margin-top: 12px;
-    }
-
-    li {
-      padding: 10px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    li button.delete-btn {
-      background: transparent;
-      color: var(--muted);
-      font-weight: bold;
-      border: none;
-      cursor: pointer;
-      font-size: 18px;
-      padding: 0 8px;
-      user-select: none;
-    }
-
-    #darkModeToggle {
-      position: fixed;
-      top: 8px;
-      right: 8px;
-      z-index: 1000;
-      font-size: 14px;
-      padding: 6px 12px;
-      border-radius: 8px;
-      border: none;
-      background: var(--primary);
-      color: #fff;
-      cursor: pointer;
-      user-select: none;
-      transition: background 0.3s;
-    }
-
-    #darkModeToggle:hover {
-      background: #0b78c5;
-    }
-
-    #calendar {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      grid-gap: 6px;
-      background: var(--card);
-      border-radius: 12px;
-      padding: 10px;
-      margin-bottom: 20px;
-      user-select: none;
-    }
-
-    #calendar .day,
-    #calendar .day-header {
-      padding: 8px;
-      text-align: center;
-      border-radius: 6px;
-      position: relative;
-      flex-direction: column;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    #calendar .day-header {
-      font-weight: bold;
-      color: var(--primary);
-    }
-
-    #calendar .day {
-      cursor: pointer;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      min-height: 50px;
-      user-select: none;
-      transition: background 0.3s;
-    }
-
-    #calendar .day:hover {
-      background: var(--primary);
-      color: #fff;
-    }
-
-    #calendar .selected {
-      background: var(--primary);
-      color: #fff;
-      font-weight: bold;
-    }
-
-    #calendar .dot-container {
-      display: flex;
-      justify-content: center;
-      gap: 3px;
-      margin-top: 3px;
-    }
-
-    #calendar .dot {
-      width: 8px;
-      height: 8px;
-      background-color: var(--primary);
-      border-radius: 50%;
-    }
-
-    #calendar .count {
-      font-size: 10px;
-      color: var(--primary);
-      font-weight: bold;
-      margin-top: 3px;
-      user-select: none;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="theme-color" content="#0ea5e9" />
+<title>FamilyBoard v11d-final</title>
+<link rel="manifest" href="./manifest.webmanifest?v=11d-final" />
+<style>
+  :root {
+    --primary: #0ea5e9;
+    --bg: #f6f8fb;
+    --card: #fff;
+    --text: #222;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+  }
+  [data-theme="dark"] {
+    --primary: #9cf;
+    --bg: #121212;
+    --card: #1e1e1e;
+    --text: #eee;
+    --muted: #aaa;
+    --border: #333;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    color: var(--text);
+    transition: background 0.3s, color 0.3s;
+  }
+  header {
+    background: var(--primary);
+    color: #fff;
+    text-align: center;
+    padding: 14px;
+    font-weight: 700;
+    font-size: 18px;
+    user-select: none;
+  }
+  .center {
+    max-width: 520px;
+    margin: 24px auto;
+    padding: 0 10px;
+  }
+  .card {
+    background: var(--card);
+    padding: 14px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    margin-bottom: 20px;
+  }
+  .muted {
+    color: var(--muted);
+  }
+  input[type="text"],
+  input[type="time"],
+  select {
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    font-size: 16px;
+  }
+  input[type="text"] {
+    flex: 1;
+  }
+  input[type="time"],
+  select {
+    width: 120px;
+  }
+  .row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  button {
+    border: none;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 16px;
+    background: var(--primary);
+    color: #fff;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.3s;
+  }
+  button:hover {
+    background: #0b78c5;
+  }
+  button.ghost {
+    background: #fff;
+    color: var(--primary);
+    border: 1px solid var(--primary);
+  }
+  ul {
+    list-style: none;
+    padding: 0;
+    margin-top: 12px;
+  }
+  li {
+    padding: 10px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  li button.delete-btn {
+    background: transparent;
+    color: var(--muted);
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+    padding: 0 8px;
+    user-select: none;
+  }
+  #darkModeToggle {
+    position: fixed;
+    top: 8px;
+    right: 8px;
+    z-index: 1000;
+    font-size: 14px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: none;
+    background: var(--primary);
+    color: #fff;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.3s;
+  }
+  #darkModeToggle:hover {
+    background: #0b78c5;
+  }
+  #calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+  #calendar-header button {
+    width: 32px;
+    height: 32px;
+    font-size: 18px;
+    font-weight: bold;
+    padding: 0;
+  }
+  #currentMonthYear {
+    font-weight: bold;
+    user-select: none;
+  }
+  #calendar {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-gap: 6px;
+    background: var(--card);
+    border-radius: 12px;
+    padding: 10px;
+    margin-bottom: 20px;
+    user-select: none;
+  }
+  #calendar .day,
+  #calendar .day-header {
+    padding: 8px;
+    text-align: center;
+    border-radius: 6px;
+    position: relative;
+    flex-direction: column;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  #calendar .day-header {
+    font-weight: bold;
+    color: var(--primary);
+  }
+  #calendar .day {
+    cursor: pointer;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    min-height: 50px;
+    user-select: none;
+    transition: background 0.3s;
+  }
+  #calendar .day:hover {
+    background: var(--primary);
+    color: #fff;
+  }
+  #calendar .selected {
+    background: var(--primary);
+    color: #fff;
+    font-weight: bold;
+  }
+  #calendar .dot-container {
+    display: flex;
+    justify-content: center;
+    gap: 3px;
+    margin-top: 3px;
+  }
+  #calendar .dot {
+    width: 8px;
+    height: 8px;
+    background-color: var(--primary);
+    border-radius: 50%;
+  }
+  #calendar .count {
+    font-size: 10px;
+    color: var(--primary);
+    font-weight: bold;
+    margin-top: 3px;
+    user-select: none;
+  }
+</style>
 </head>
 
 <body>
-  <header>Family Board</header>
+<header>Family Board</header>
 
-  <button id="darkModeToggle" aria-label="Sötét mód kapcsoló">Dark Mode</button>
+<button id="darkModeToggle" aria-label="Sötét mód kapcsoló">Dark Mode</button>
 
-  <div id="app" class="center">
+<div id="app" class="center">
+  <div id="calendar-header">
+    <button id="prevMonth" aria-label="Előző hónap">&lt;</button>
+    <span id="currentMonthYear" aria-live="polite"></span>
+    <button id="nextMonth" aria-label="Következő hónap">&gt;</button>
+  </div>
+  <div id="calendar"></div>
 
-    <!-- Teljes havi naptár -->
-    <div id="calendar"></div>
-
-    <!-- Teendők -->
-    <div class="card" aria-label="Teendő lista">
-      <h2>📋 Teendők</h2>
-      <div class="row">
-        <input type="text" id="taskInput" placeholder="Új teendő…" aria-label="Új teendő" />
-        <input type="time" id="taskTime" aria-label="Idő (HH:MM)" />
-        <button id="addTask" title="Hozzáadás">+</button>
-      </div>
-      <ul id="taskList"></ul>
+  <div class="card" aria-label="Teendő lista">
+    <h2>📋 Teendők</h2>
+    <div class="row">
+      <input type="text" id="taskInput" placeholder="Új teendő…" aria-label="Új teendő" />
+      <input type="time" id="taskTime" aria-label="Idő (HH:MM)" />
+      <button id="addTask" title="Hozzáadás">+</button>
     </div>
-
-    <!-- Bevásárlólista -->
-    <div class="card" aria-label="Bevásárlólista">
-      <h2>🛒 Bevásárlólista</h2>
-      <div class="row">
-        <input type="text" id="shoppingInput" placeholder="Új tétel…" aria-label="Új tétel" />
-        <button id="addShopping" title="Hozzáadás">+</button>
-      </div>
-      <ul id="shoppingList"></ul>
-    </div>
-
+    <ul id="taskList"></ul>
   </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
-    import {
-      getAuth,
-      onAuthStateChanged,
-      signInAnonymously,
-      setPersistence,
-      browserLocalPersistence
-    } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
-    import {
-      getFirestore,
-      enableIndexedDbPersistence,
-      collection,
-      addDoc,
-      query,
-      orderBy,
-      onSnapshot,
-      deleteDoc,
-      doc,
-      getDocs
-    } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+  <div class="card" aria-label="Bevásárlólista">
+    <h2>🛒 Bevásárlólista</h2>
+    <div class="row">
+      <input type="text" id="shoppingInput" placeholder="Új tétel…" aria-label="Új tétel" />
+      <button id="addShopping" title="Hozzáadás">+</button>
+    </div>
+    <ul id="shoppingList"></ul>
+  </div>
+</div>
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyAeoxtOe5Cleasm3KdeSHP9WDR3PkU-N1I",
-      authDomain: "mosas-nyilvantartas.firebaseapp.com",
-      projectId: "mosas-nyilvantartas",
-      storageBucket: "mosas-nyilvantartas.firebasestorage.app",
-      messagingSenderId: "38259241645",
-      appId: "1:38259241645:web:26070b1d0686def9f00c24"
-    };
-    initializeApp(firebaseConfig);
-    const auth = getAuth();
-    setPersistence(auth, browserLocalPersistence);
-    const db = getFirestore();
-    enableIndexedDbPersistence(db).catch(() => {});
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+  import {
+    getAuth,
+    onAuthStateChanged,
+    signInAnonymously,
+    setPersistence,
+    browserLocalPersistence
+  } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+  import {
+    getFirestore,
+    enableIndexedDbPersistence,
+    collection,
+    addDoc,
+    query,
+    orderBy,
+    onSnapshot,
+    deleteDoc,
+    doc,
+    getDocs
+  } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
-    const householdId = "default";
+  const firebaseConfig = {
+    apiKey: "AIzaSyAeoxtOe5Cleasm3KdeSHP9WDR3PkU-N1I",
+    authDomain: "mosas-nyilvantartas.firebaseapp.com",
+    projectId: "mosas-nyilvantartas",
+    storageBucket: "mosas-nyilvantartas.firebasestorage.app",
+    messagingSenderId: "38259241645",
+    appId: "1:38259241645:web:26070b1d0686def9f00c24"
+  };
+  initializeApp(firebaseConfig);
+  const auth = getAuth();
+  setPersistence(auth, browserLocalPersistence);
+  const db = getFirestore();
+  enableIndexedDbPersistence(db).catch(() => {});
 
-    // Dark mode switch
-    const toggleBtn = document.getElementById('darkModeToggle');
-    const rootElem = document.documentElement;
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-      rootElem.setAttribute('data-theme', savedTheme);
+  const householdId = "default";
+
+  const toggleBtn = document.getElementById('darkModeToggle');
+  const rootElem = document.documentElement;
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme) {
+    rootElem.setAttribute('data-theme', savedTheme);
+  }
+  toggleBtn.addEventListener('click', () => {
+    const currentTheme = rootElem.getAttribute('data-theme');
+    if (currentTheme === 'dark') {
+      rootElem.removeAttribute('data-theme');
+      localStorage.setItem('theme', 'light');
+    } else {
+      rootElem.setAttribute('data-theme', 'dark');
+      localStorage.setItem('theme', 'dark');
     }
-    toggleBtn.addEventListener('click', () => {
-      const currentTheme = rootElem.getAttribute('data-theme');
-      if (currentTheme === 'dark') {
-        rootElem.removeAttribute('data-theme');
-        localStorage.setItem('theme', 'light');
-      } else {
-        rootElem.setAttribute('data-theme', 'dark');
-        localStorage.setItem('theme', 'dark');
-      }
-    });
+  });
 
-    // Notification permission
-    async function requestNotificationPermission() {
-      if (!("Notification" in window)) {
-        alert("Ez a böngésző nem támogatja az értesítéseket.");
-        return false;
-      }
-      if (Notification.permission === "granted") return true;
-      if (Notification.permission !== "denied") {
-        const permission = await Notification.requestPermission();
-        return permission === "granted";
-      }
+  async function requestNotificationPermission() {
+    if (!("Notification" in window)) {
+      alert("Ez a böngésző nem támogatja az értesítéseket.");
       return false;
     }
-
-    // Local notification
-    function showLocalNotification(title, body) {
-      if (Notification.permission !== "granted") return;
-      new Notification(title, {
-        body,
-        icon: "icons/icon-192.png",
-      });
+    if (Notification.permission === "granted") return true;
+    if (Notification.permission !== "denied") {
+      const permission = await Notification.requestPermission();
+      return permission === "granted";
     }
+    return false;
+  }
 
-    // Date formatting
-    function formatDate(date) {
-      const y = date.getFullYear();
-      const m = String(date.getMonth() + 1).padStart(2, "0");
-      const d = String(date.getDate()).padStart(2, "0");
-      return `${y}-${m}-${d}`;
-    }
+  function showLocalNotification(title, body) {
+    if (Notification.permission !== "granted") return;
+    new Notification(title, {
+      body,
+      icon: "icons/icon-192.png",
+    });
+  }
 
-    // Load month items count for dots and number
-    const monthItemsCount = new Map();
+  function formatDate(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
 
-    async function loadMonthItemsCount(year, month) {
-      monthItemsCount.clear();
-      const tasksRef = collection(db, `households/${householdId}/tasks`);
-      const shoppingRef = collection(db, `households/${householdId}/shopping`);
-      const monthStr = `${year}-${String(month + 1).padStart(2, "0")}`;
+  let monthItemsCount = new Map();
 
-      await Promise.all([
-        getDocs(tasksRef).then((snapshot) => {
-          snapshot.forEach((doc) => {
-            const data = doc.data();
-            if (data.date && data.date.startsWith(monthStr)) {
-              monthItemsCount.set(data.date, (monthItemsCount.get(data.date) || 0) + 1);
-            }
-          });
-        }),
-        getDocs(shoppingRef).then((snapshot) => {
-          snapshot.forEach((doc) => {
-            const data = doc.data();
-            if (data.date && data.date.startsWith(monthStr)) {
-              monthItemsCount.set(data.date, (monthItemsCount.get(data.date) || 0) + 1);
-            }
-          });
-        }),
-      ]);
-    }
+  async function loadMonthItemsCount(year, month) {
+    monthItemsCount.clear();
+    const tasksRef = collection(db, `households/${householdId}/tasks`);
+    const shoppingRef = collection(db, `households/${householdId}/shopping`);
+    const monthStr = `${year}-${String(month + 1).padStart(2, "0")}`;
 
-    // Calendar rendering
-    let selectedDate = new Date();
-    const calendarElem = document.getElementById("calendar");
-
-    async function createCalendar(year, month) {
-      await loadMonthItemsCount(year, month);
-      calendarElem.innerHTML = "";
-      const daysOfWeek = ["H", "K", "Sze", "Cs", "P", "Szo", "V"];
-      daysOfWeek.forEach((day) => {
-        const header = document.createElement("div");
-        header.textContent = day;
-        header.classList.add("day-header");
-        calendarElem.appendChild(header);
-      });
-      const firstDay = new Date(year, month, 1);
-      const lastDay = new Date(year, month + 1, 0);
-      const startDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
-      const daysInMonth = lastDay.getDate();
-
-      for (let i = 0; i < startDay; i++) {
-        const emptyCell = document.createElement("div");
-        emptyCell.classList.add("day");
-        calendarElem.appendChild(emptyCell);
-      }
-
-      for (let day = 1; day <= daysInMonth; day++) {
-        const dayCell = document.createElement("div");
-        dayCell.classList.add("day");
-        dayCell.textContent = day;
-
-        const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-
-        if (monthItemsCount.has(dateStr)) {
-          const count = monthItemsCount.get(dateStr);
-          const dotContainer = document.createElement("div");
-          dotContainer.className = "dot-container";
-
-          const nDots = Math.min(count, 3);
-          for (let i = 0; i < nDots; i++) {
-            const dot = document.createElement("span");
-            dot.className = "dot";
-            dotContainer.appendChild(dot);
-          }
-          dayCell.appendChild(dotContainer);
-
-          if (count > 3) {
-            const countSpan = document.createElement("div");
-            countSpan.className = "count";
-            countSpan.textContent = count;
-            dayCell.appendChild(countSpan);
-          }
-        }
-
-        if (year === selectedDate.getFullYear() && month === selectedDate.getMonth() && day === selectedDate.getDate()) {
-          dayCell.classList.add("selected");
-        }
-
-        dayCell.addEventListener("click", () => {
-          selectedDate = new Date(year, month, day);
-          createCalendar(year, month);
-          loadTasks();
-          loadShopping();
-        });
-
-        calendarElem.appendChild(dayCell);
-      }
-    }
-
-    // Tasks
-    const taskInput = document.getElementById("taskInput");
-    const taskTime = document.getElementById("taskTime");
-    const addTask = document.getElementById("addTask");
-    const taskList = document.getElementById("taskList");
-
-    let unsubscribeTasks = null;
-    function loadTasks() {
-      if (unsubscribeTasks) unsubscribeTasks();
-      const tasksRef = collection(db, `households/${householdId}/tasks`);
-      const q = query(tasksRef, orderBy("createdAt", "desc"));
-      unsubscribeTasks = onSnapshot(q, (snapshot) => {
-        const dateStr = formatDate(selectedDate);
-        const tasks = [];
+    await Promise.all([
+      getDocs(tasksRef).then((snapshot) => {
         snapshot.forEach((doc) => {
           const data = doc.data();
-          if (data.date === dateStr) {
-            tasks.push({ ...data, docId: doc.id });
+          if (data.date && data.date.startsWith(monthStr)) {
+            monthItemsCount.set(data.date, (monthItemsCount.get(data.date) || 0) + 1);
           }
         });
-        renderTasks(tasks);
-      });
-    }
-    function renderTasks(tasks) {
-      taskList.innerHTML = "";
-      tasks.forEach((task) => {
-        const li = document.createElement("li");
-        li.textContent = (task.time ? `[${task.time}] ` : "") + task.text;
-        const delBtn = document.createElement("button");
-        delBtn.className = "delete-btn";
-        delBtn.title = "Törlés";
-        delBtn.textContent = "✖";
-        delBtn.addEventListener("click", async () => {
-          const pin = prompt("Add meg a PIN kódot a törléshez:");
-          if (pin !== "2025") {
-            alert("Hibás PIN kód!");
-            return;
-          }
-          await deleteDoc(doc(db, `households/${householdId}/tasks`, task.docId));
-        });
-        li.appendChild(delBtn);
-        taskList.appendChild(li);
-      });
-    }
-    addTask.addEventListener("click", async () => {
-      const text = taskInput.value.trim();
-      const time = taskTime.value.trim();
-      if (!text) return alert("Adj meg egy teendőt!");
-      const dateStr = formatDate(selectedDate);
-      await addDoc(collection(db, `households/${householdId}/tasks`), {
-        text,
-        time: time || "",
-        date: dateStr,
-        createdAt: Date.now(),
-      });
-      showLocalNotification("Új teendő", `Feladat: ${text}`);
-      taskInput.value = "";
-      taskTime.value = "";
-    });
-
-    // Shopping list
-    const shoppingInput = document.getElementById("shoppingInput");
-    const addShopping = document.getElementById("addShopping");
-    const shoppingList = document.getElementById("shoppingList");
-
-    let unsubscribeShopping = null;
-    function loadShopping() {
-      if (unsubscribeShopping) unsubscribeShopping();
-      const shoppingRef = collection(db, `households/${householdId}/shopping`);
-      const q = query(shoppingRef, orderBy("createdAt", "desc"));
-      unsubscribeShopping = onSnapshot(q, (snapshot) => {
-        const items = [];
+      }),
+      getDocs(shoppingRef).then((snapshot) => {
         snapshot.forEach((doc) => {
-          items.push({ ...doc.data(), docId: doc.id });
-        });
-        renderShopping(items);
-      });
-    }
-    function renderShopping(items) {
-      shoppingList.innerHTML = "";
-      items.forEach((item) => {
-        const li = document.createElement("li");
-        li.textContent = item.text;
-        const delBtn = document.createElement("button");
-        delBtn.className = "delete-btn";
-        delBtn.title = "Törlés";
-        delBtn.textContent = "✖";
-        delBtn.addEventListener("click", async () => {
-          const pin = prompt("Add meg a PIN kódot a törléshez:");
-          if (pin !== "2025") {
-            alert("Hibás PIN kód!");
-            return;
+          const data = doc.data();
+          if (data.date && data.date.startsWith(monthStr)) {
+            monthItemsCount.set(data.date, (monthItemsCount.get(data.date) || 0) + 1);
           }
-          await deleteDoc(doc(db, `households/${householdId}/shopping`, item.docId));
         });
-        li.appendChild(delBtn);
-        shoppingList.appendChild(li);
-      });
-    }
-    addShopping.addEventListener("click", async () => {
-      const text = shoppingInput.value.trim();
-      if (!text) return alert("Adj meg egy bevásárló tételt!");
-      await addDoc(collection(db, `households/${householdId}/shopping`), {
-        text,
-        createdAt: Date.now(),
-      });
-      showLocalNotification("Új bevásárló tétel", `Tétel: ${text}`);
-      shoppingInput.value = "";
+      }),
+    ]);
+  }
+
+  const calendarElem = document.getElementById("calendar");
+  const calendarHeader = document.getElementById("calendar-header");
+  const currentMonthYearSpan = document.getElementById("currentMonthYear");
+  const prevMonthBtn = document.getElementById("prevMonth");
+  const nextMonthBtn = document.getElementById("nextMonth");
+
+  let selectedDate = new Date();
+  let selectedYear = selectedDate.getFullYear();
+  let selectedMonth = selectedDate.getMonth();
+
+  function updateCurrentMonthYear(year, month) {
+    const date = new Date(year, month, 1);
+    const str = date.toLocaleDateString("hu-HU", { year: "numeric", month: "long" });
+    currentMonthYearSpan.textContent = str;
+  }
+
+  async function createCalendar(year, month) {
+    await loadMonthItemsCount(year, month);
+    calendarElem.innerHTML = "";
+    const daysOfWeek = ["H", "K", "Sze", "Cs", "P", "Szo", "V"];
+    daysOfWeek.forEach((day) => {
+      const header = document.createElement("div");
+      header.textContent = day;
+      header.classList.add("day-header");
+      calendarElem.appendChild(header);
     });
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
+    const daysInMonth = lastDay.getDate();
 
-    // Init
-    async function init() {
-      await signInAnonymously(auth);
-      await requestNotificationPermission();
-      createCalendar(selectedDate.getFullYear(), selectedDate.getMonth());
-      loadTasks();
-      loadShopping();
+    for (let i = 0; i < startDay; i++) {
+      const emptyCell = document.createElement("div");
+      emptyCell.classList.add("day");
+      calendarElem.appendChild(emptyCell);
     }
 
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        init();
-      } else {
-        signInAnonymously(auth);
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dayCell = document.createElement("div");
+      dayCell.classList.add("day");
+      dayCell.textContent = day;
+
+      const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+
+      if (monthItemsCount.has(dateStr)) {
+        const count = monthItemsCount.get(dateStr);
+        const dotContainer = document.createElement("div");
+        dotContainer.className = "dot-container";
+
+        const nDots = Math.min(count, 3);
+        for (let i = 0; i < nDots; i++) {
+          const dot = document.createElement("span");
+          dot.className = "dot";
+          dotContainer.appendChild(dot);
+        }
+        dayCell.appendChild(dotContainer);
+
+        if (count > 3) {
+          const countSpan = document.createElement("div");
+          countSpan.className = "count";
+          countSpan.textContent = count;
+          dayCell.appendChild(countSpan);
+        }
       }
-    });
-  </script>
 
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js?v=11d-final');
+      if (year === selectedYear && month === selectedMonth && day === selectedDate.getDate()) {
+        dayCell.classList.add("selected");
+      }
+
+      dayCell.addEventListener("click", () => {
+        selectedDate = new Date(year, month, day);
+        selectedYear = year;
+        selectedMonth = month;
+        refreshCalendar();
+      });
+
+      calendarElem.appendChild(dayCell);
     }
-  </script>
+  }
+
+  async function refreshCalendar() {
+    updateCurrentMonthYear(selectedYear, selectedMonth);
+    await createCalendar(selectedYear, selectedMonth);
+    loadTasks();
+    loadShopping();
+  }
+
+  prevMonthBtn.addEventListener("click", () => {
+    selectedMonth--;
+    if (selectedMonth < 0) {
+      selectedMonth = 11;
+      selectedYear--;
+    }
+    selectedDate = new Date(selectedYear, selectedMonth, 1);
+    refreshCalendar();
+  });
+
+  nextMonthBtn.addEventListener("click", () => {
+    selectedMonth++;
+    if (selectedMonth > 11) {
+      selectedMonth = 0;
+      selectedYear++;
+    }
+    selectedDate = new Date(selectedYear, selectedMonth, 1);
+    refreshCalendar();
+  });
+
+  const taskInput = document.getElementById("taskInput");
+  const taskTime = document.getElementById("taskTime");
+  const addTask = document.getElementById("addTask");
+  const taskList = document.getElementById("taskList");
+
+  let unsubscribeTasks = null;
+  function loadTasks() {
+    if (unsubscribeTasks) unsubscribeTasks();
+    const tasksRef = collection(db, `households/${householdId}/tasks`);
+    const q = query(tasksRef, orderBy("createdAt", "desc"));
+    unsubscribeTasks = onSnapshot(q, (snapshot) => {
+      const dateStr = formatDate(selectedDate);
+      const tasks = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.date === dateStr) {
+          tasks.push({ ...data, docId: doc.id });
+        }
+      });
+      renderTasks(tasks);
+    });
+  }
+  function renderTasks(tasks) {
+    taskList.innerHTML = "";
+    tasks.forEach((task) => {
+      const li = document.createElement("li");
+      li.textContent = (task.time ? `[${task.time}] ` : "") + task.text;
+      const delBtn = document.createElement("button");
+      delBtn.className = "delete-btn";
+      delBtn.title = "Törlés";
+      delBtn.textContent = "✖";
+      delBtn.addEventListener("click", async () => {
+        const pin = prompt("Add meg a PIN kódot a törléshez:");
+        if (pin !== "2025") {
+          alert("Hibás PIN kód!");
+          return;
+        }
+        await deleteDoc(doc(db, `households/${householdId}/tasks`, task.docId));
+      });
+      li.appendChild(delBtn);
+      taskList.appendChild(li);
+    });
+  }
+  addTask.addEventListener("click", async () => {
+    const text = taskInput.value.trim();
+    const time = taskTime.value.trim();
+    if (!text) return alert("Adj meg egy teendőt!");
+    const dateStr = formatDate(selectedDate);
+    await addDoc(collection(db, `households/${householdId}/tasks`), {
+      text,
+      time: time || "",
+      date: dateStr,
+      createdAt: Date.now(),
+    });
+    showLocalNotification("Új teendő", `Feladat: ${text}`);
+    taskInput.value = "";
+    taskTime.value = "";
+  });
+
+  const shoppingInput = document.getElementById("shoppingInput");
+  const addShopping = document.getElementById("addShopping");
+  const shoppingList = document.getElementById("shoppingList");
+
+  let unsubscribeShopping = null;
+  function loadShopping() {
+    if (unsubscribeShopping) unsubscribeShopping();
+    const shoppingRef = collection(db, `households/${householdId}/shopping`);
+    const q = query(shoppingRef, orderBy("createdAt", "desc"));
+    unsubscribeShopping = onSnapshot(q, (snapshot) => {
+      const items = [];
+      snapshot.forEach((doc) => {
+        items.push({ ...doc.data(), docId: doc.id });
+      });
+      renderShopping(items);
+    });
+  }
+  function renderShopping(items) {
+    shoppingList.innerHTML = "";
+    items.forEach((item) => {
+      const li = document.createElement("li");
+      li.textContent = item.text;
+      const delBtn = document.createElement("button");
+      delBtn.className = "delete-btn";
+      delBtn.title = "Törlés";
+      delBtn.textContent = "✖";
+      delBtn.addEventListener("click", async () => {
+        const pin = prompt("Add meg a PIN kódot a törléshez:");
+        if (pin !== "2025") {
+          alert("Hibás PIN kód!");
+          return;
+        }
+        await deleteDoc(doc(db, `households/${householdId}/shopping`, item.docId));
+      });
+      li.appendChild(delBtn);
+      shoppingList.appendChild(li);
+    });
+  }
+  addShopping.addEventListener("click", async () => {
+    const text = shoppingInput.value.trim();
+    if (!text) return alert("Adj meg egy bevásárló tételt!");
+    await addDoc(collection(db, `households/${householdId}/shopping`), {
+      text,
+      createdAt: Date.now(),
+    });
+    showLocalNotification("Új bevásárló tétel", `Tétel: ${text}`);
+    shoppingInput.value = "";
+  });
+
+  async function init() {
+    await signInAnonymously(auth);
+    await requestNotificationPermission();
+    refreshCalendar();
+  }
+
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      init();
+    } else {
+      signInAnonymously(auth);
+    }
+  });
+</script>
+
+<script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./sw.js?v=11d-final");
+  }
+</script>
+
 </body>
 
 </html>
