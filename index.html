@@ -178,6 +178,10 @@
       text-align: center;
       border-radius: 6px;
       position: relative;
+      flex-direction: column;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
 
     #calendar .day-header {
@@ -189,13 +193,9 @@
       cursor: pointer;
       background: var(--bg);
       border: 1px solid var(--border);
-      min-height: 40px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      min-height: 50px;
       user-select: none;
       transition: background 0.3s;
-      flex-direction: column;
     }
 
     #calendar .day:hover {
@@ -209,12 +209,26 @@
       font-weight: bold;
     }
 
+    #calendar .dot-container {
+      display: flex;
+      justify-content: center;
+      gap: 3px;
+      margin-top: 3px;
+    }
+
     #calendar .dot {
-      width: 6px;
-      height: 6px;
+      width: 8px;
+      height: 8px;
       background-color: var(--primary);
       border-radius: 50%;
+    }
+
+    #calendar .count {
+      font-size: 10px;
+      color: var(--primary);
+      font-weight: bold;
       margin-top: 3px;
+      user-select: none;
     }
   </style>
 </head>
@@ -222,13 +236,11 @@
 <body>
   <header>Family Board</header>
 
-  <button id="darkModeToggle" aria-label="Sötét mód kapcsoló">
-    Dark Mode
-  </button>
+  <button id="darkModeToggle" aria-label="Sötét mód kapcsoló">Dark Mode</button>
 
   <div id="app" class="center">
 
-    <!-- Teljes méretű havi naptár -->
+    <!-- Teljes havi naptár -->
     <div id="calendar"></div>
 
     <!-- Teendők -->
@@ -251,6 +263,7 @@
       </div>
       <ul id="shoppingList"></ul>
     </div>
+
   </div>
 
   <script type="module">
@@ -260,7 +273,7 @@
       onAuthStateChanged,
       signInAnonymously,
       setPersistence,
-      browserLocalPersistence,
+      browserLocalPersistence
     } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
     import {
       getFirestore,
@@ -272,7 +285,7 @@
       onSnapshot,
       deleteDoc,
       doc,
-      getDocs,
+      getDocs
     } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -291,10 +304,9 @@
 
     const householdId = "default";
 
-    // --- Dark mode toggle ---
+    // Dark mode switch
     const toggleBtn = document.getElementById('darkModeToggle');
     const rootElem = document.documentElement;
-
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme) {
       rootElem.setAttribute('data-theme', savedTheme);
@@ -310,7 +322,7 @@
       }
     });
 
-    // --- Notification permission ---
+    // Notification permission
     async function requestNotificationPermission() {
       if (!("Notification" in window)) {
         alert("Ez a böngésző nem támogatja az értesítéseket.");
@@ -324,7 +336,7 @@
       return false;
     }
 
-    // --- Local notification ---
+    // Local notification
     function showLocalNotification(title, body) {
       if (Notification.permission !== "granted") return;
       new Notification(title, {
@@ -333,7 +345,7 @@
       });
     }
 
-    // --- Date formázás ---
+    // Date formatting
     function formatDate(date) {
       const y = date.getFullYear();
       const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -341,11 +353,11 @@
       return `${y}-${m}-${d}`;
     }
 
-    // --- Havi tételnapok betöltése a pöttyökhöz ---
-    let monthItems = new Set();
+    // Load month items count for dots and number
+    const monthItemsCount = new Map();
 
-    async function loadMonthItems(year, month) {
-      monthItems.clear();
+    async function loadMonthItemsCount(year, month) {
+      monthItemsCount.clear();
       const tasksRef = collection(db, `households/${householdId}/tasks`);
       const shoppingRef = collection(db, `households/${householdId}/shopping`);
       const monthStr = `${year}-${String(month + 1).padStart(2, "0")}`;
@@ -355,7 +367,7 @@
           snapshot.forEach((doc) => {
             const data = doc.data();
             if (data.date && data.date.startsWith(monthStr)) {
-              monthItems.add(data.date);
+              monthItemsCount.set(data.date, (monthItemsCount.get(data.date) || 0) + 1);
             }
           });
         }),
@@ -363,59 +375,71 @@
           snapshot.forEach((doc) => {
             const data = doc.data();
             if (data.date && data.date.startsWith(monthStr)) {
-              monthItems.add(data.date);
+              monthItemsCount.set(data.date, (monthItemsCount.get(data.date) || 0) + 1);
             }
           });
         }),
       ]);
     }
 
-    // --- Naptár generálása ---
+    // Calendar rendering
     let selectedDate = new Date();
-    const calendarElem = document.getElementById('calendar');
+    const calendarElem = document.getElementById("calendar");
 
     async function createCalendar(year, month) {
-      await loadMonthItems(year, month);
-
-      calendarElem.innerHTML = '';
-      const daysOfWeek = ['H', 'K', 'Sze', 'Cs', 'P', 'Szo', 'V'];
-      daysOfWeek.forEach(day => {
-        const header = document.createElement('div');
+      await loadMonthItemsCount(year, month);
+      calendarElem.innerHTML = "";
+      const daysOfWeek = ["H", "K", "Sze", "Cs", "P", "Szo", "V"];
+      daysOfWeek.forEach((day) => {
+        const header = document.createElement("div");
         header.textContent = day;
-        header.classList.add('day-header');
+        header.classList.add("day-header");
         calendarElem.appendChild(header);
       });
-
       const firstDay = new Date(year, month, 1);
       const lastDay = new Date(year, month + 1, 0);
       const startDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
       const daysInMonth = lastDay.getDate();
 
       for (let i = 0; i < startDay; i++) {
-        const emptyCell = document.createElement('div');
-        emptyCell.classList.add('day');
+        const emptyCell = document.createElement("div");
+        emptyCell.classList.add("day");
         calendarElem.appendChild(emptyCell);
       }
 
       for (let day = 1; day <= daysInMonth; day++) {
-        const dayCell = document.createElement('div');
-        dayCell.classList.add('day');
+        const dayCell = document.createElement("div");
+        dayCell.classList.add("day");
         dayCell.textContent = day;
 
-        // Dátum sztring a hónaphoz
-        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 
-        if (monthItems.has(dateStr)) {
-          const dot = document.createElement('span');
-          dot.className = 'dot';
-          dayCell.appendChild(dot);
+        if (monthItemsCount.has(dateStr)) {
+          const count = monthItemsCount.get(dateStr);
+          const dotContainer = document.createElement("div");
+          dotContainer.className = "dot-container";
+
+          const nDots = Math.min(count, 3);
+          for (let i = 0; i < nDots; i++) {
+            const dot = document.createElement("span");
+            dot.className = "dot";
+            dotContainer.appendChild(dot);
+          }
+          dayCell.appendChild(dotContainer);
+
+          if (count > 3) {
+            const countSpan = document.createElement("div");
+            countSpan.className = "count";
+            countSpan.textContent = count;
+            dayCell.appendChild(countSpan);
+          }
         }
 
         if (year === selectedDate.getFullYear() && month === selectedDate.getMonth() && day === selectedDate.getDate()) {
-          dayCell.classList.add('selected');
+          dayCell.classList.add("selected");
         }
 
-        dayCell.addEventListener('click', () => {
+        dayCell.addEventListener("click", () => {
           selectedDate = new Date(year, month, day);
           createCalendar(year, month);
           loadTasks();
@@ -426,21 +450,21 @@
       }
     }
 
-    // --- Teendők ---
-    const taskInput = document.getElementById('taskInput');
-    const taskTime = document.getElementById('taskTime');
-    const addTask = document.getElementById('addTask');
-    const taskList = document.getElementById('taskList');
+    // Tasks
+    const taskInput = document.getElementById("taskInput");
+    const taskTime = document.getElementById("taskTime");
+    const addTask = document.getElementById("addTask");
+    const taskList = document.getElementById("taskList");
 
     let unsubscribeTasks = null;
     function loadTasks() {
       if (unsubscribeTasks) unsubscribeTasks();
       const tasksRef = collection(db, `households/${householdId}/tasks`);
-      const q = query(tasksRef, orderBy('createdAt', 'desc'));
+      const q = query(tasksRef, orderBy("createdAt", "desc"));
       unsubscribeTasks = onSnapshot(q, (snapshot) => {
         const dateStr = formatDate(selectedDate);
         const tasks = [];
-        snapshot.forEach(doc => {
+        snapshot.forEach((doc) => {
           const data = doc.data();
           if (data.date === dateStr) {
             tasks.push({ ...data, docId: doc.id });
@@ -450,18 +474,18 @@
       });
     }
     function renderTasks(tasks) {
-      taskList.innerHTML = '';
-      tasks.forEach(task => {
-        const li = document.createElement('li');
-        li.textContent = (task.time ? `[${task.time}] ` : '') + task.text;
-        const delBtn = document.createElement('button');
-        delBtn.className = 'delete-btn';
-        delBtn.title = 'Törlés';
-        delBtn.textContent = '✖';
-        delBtn.addEventListener('click', async () => {
-          const pin = prompt('Add meg a PIN kódot a törléshez:');
-          if (pin !== '2025') {
-            alert('Hibás PIN kód!');
+      taskList.innerHTML = "";
+      tasks.forEach((task) => {
+        const li = document.createElement("li");
+        li.textContent = (task.time ? `[${task.time}] ` : "") + task.text;
+        const delBtn = document.createElement("button");
+        delBtn.className = "delete-btn";
+        delBtn.title = "Törlés";
+        delBtn.textContent = "✖";
+        delBtn.addEventListener("click", async () => {
+          const pin = prompt("Add meg a PIN kódot a törléshez:");
+          if (pin !== "2025") {
+            alert("Hibás PIN kód!");
             return;
           }
           await deleteDoc(doc(db, `households/${householdId}/tasks`, task.docId));
@@ -470,53 +494,53 @@
         taskList.appendChild(li);
       });
     }
-    addTask.addEventListener('click', async () => {
+    addTask.addEventListener("click", async () => {
       const text = taskInput.value.trim();
       const time = taskTime.value.trim();
-      if (!text) return alert('Adj meg egy teendőt!');
+      if (!text) return alert("Adj meg egy teendőt!");
       const dateStr = formatDate(selectedDate);
       await addDoc(collection(db, `households/${householdId}/tasks`), {
         text,
-        time: time || '',
+        time: time || "",
         date: dateStr,
-        createdAt: Date.now()
+        createdAt: Date.now(),
       });
-      showLocalNotification('Új teendő', `Feladat: ${text}`);
-      taskInput.value = '';
-      taskTime.value = '';
+      showLocalNotification("Új teendő", `Feladat: ${text}`);
+      taskInput.value = "";
+      taskTime.value = "";
     });
 
-    // --- Bevásárlólista ---
-    const shoppingInput = document.getElementById('shoppingInput');
-    const addShopping = document.getElementById('addShopping');
-    const shoppingList = document.getElementById('shoppingList');
+    // Shopping list
+    const shoppingInput = document.getElementById("shoppingInput");
+    const addShopping = document.getElementById("addShopping");
+    const shoppingList = document.getElementById("shoppingList");
 
     let unsubscribeShopping = null;
     function loadShopping() {
       if (unsubscribeShopping) unsubscribeShopping();
       const shoppingRef = collection(db, `households/${householdId}/shopping`);
-      const q = query(shoppingRef, orderBy('createdAt', 'desc'));
+      const q = query(shoppingRef, orderBy("createdAt", "desc"));
       unsubscribeShopping = onSnapshot(q, (snapshot) => {
         const items = [];
-        snapshot.forEach(doc => {
+        snapshot.forEach((doc) => {
           items.push({ ...doc.data(), docId: doc.id });
         });
         renderShopping(items);
       });
     }
     function renderShopping(items) {
-      shoppingList.innerHTML = '';
-      items.forEach(item => {
-        const li = document.createElement('li');
+      shoppingList.innerHTML = "";
+      items.forEach((item) => {
+        const li = document.createElement("li");
         li.textContent = item.text;
-        const delBtn = document.createElement('button');
-        delBtn.className = 'delete-btn';
-        delBtn.title = 'Törlés';
-        delBtn.textContent = '✖';
-        delBtn.addEventListener('click', async () => {
-          const pin = prompt('Add meg a PIN kódot a törléshez:');
-          if (pin !== '2025') {
-            alert('Hibás PIN kód!');
+        const delBtn = document.createElement("button");
+        delBtn.className = "delete-btn";
+        delBtn.title = "Törlés";
+        delBtn.textContent = "✖";
+        delBtn.addEventListener("click", async () => {
+          const pin = prompt("Add meg a PIN kódot a törléshez:");
+          if (pin !== "2025") {
+            alert("Hibás PIN kód!");
             return;
           }
           await deleteDoc(doc(db, `households/${householdId}/shopping`, item.docId));
@@ -525,18 +549,18 @@
         shoppingList.appendChild(li);
       });
     }
-    addShopping.addEventListener('click', async () => {
+    addShopping.addEventListener("click", async () => {
       const text = shoppingInput.value.trim();
-      if (!text) return alert('Adj meg egy bevásárló tételt!');
+      if (!text) return alert("Adj meg egy bevásárló tételt!");
       await addDoc(collection(db, `households/${householdId}/shopping`), {
         text,
-        createdAt: Date.now()
+        createdAt: Date.now(),
       });
-      showLocalNotification('Új bevásárló tétel', `Tétel: ${text}`);
-      shoppingInput.value = '';
+      showLocalNotification("Új bevásárló tétel", `Tétel: ${text}`);
+      shoppingInput.value = "";
     });
 
-    // App inicializálása
+    // Init
     async function init() {
       await signInAnonymously(auth);
       await requestNotificationPermission();
@@ -559,7 +583,6 @@
       navigator.serviceWorker.register('./sw.js?v=11d-final');
     }
   </script>
-
 </body>
 
 </html>
