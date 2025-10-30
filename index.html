@@ -9,10 +9,382 @@
 <title>FamilyBoard v11d-final</title>
 <link rel="manifest" href="./manifest.webmanifest?v=11d-final" />
 <style>
-  /* A teljes korábbi stílus itt jön, a modern, reszponzív, letisztult design */
-  /* Például az előző pár üzenetben elküldött css */
+  :root {
+    --primary: #0ea5e9;
+    --secondary: #0284c7;
+    --bg: #f6f8fb;
+    --card: #ffffff;
+    --text: #222222;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --hover-bg: #d0e9ff;
+    --selected-blue: #0a63b7;
+    --dot-light-blue: #7ec8ff;
+    --danger-red: #e11d48;
+  }
+
+  [data-theme="dark"] {
+    --primary: #9cf;
+    --secondary: #66aaff;
+    --bg: #121212;
+    --card: #1e1e1e;
+    --text: #eee;
+    --muted: #aaa;
+    --border: #333;
+    --hover-bg: #254060;
+    --selected-blue: #2962ff;
+    --dot-light-blue: #5599ff;
+    --danger-red: #f87171;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  header {
+    background: linear-gradient(135deg, var(--secondary), var(--primary));
+    color: white;
+    padding: 16px 0;
+    text-align: center;
+    font-weight: 700;
+    font-size: 1.4rem;
+    border-radius: 0 0 24px 24px;
+    box-shadow: 0 4px 8px rgba(14, 165, 233, 0.4);
+    user-select: none;
+  }
+
+  #darkModeToggle {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    background: var(--primary);
+    border: none;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.7);
+    transition: background 0.25s ease;
+    user-select: none;
+    z-index: 1000;
+  }
+
+  #darkModeToggle:hover,
+  #darkModeToggle:focus {
+    background: var(--secondary);
+    outline: none;
+  }
+
+  .center {
+    max-width: 600px;
+    margin: 28px auto;
+    padding: 0 16px;
+  }
+
+  .card {
+    background: var(--card);
+    border-radius: 20px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.07);
+    padding: 20px 24px;
+    margin-bottom: 28px;
+    border: none;
+    transition: box-shadow 0.3s ease;
+  }
+
+  .card:hover {
+    box-shadow: 0 8px 26px rgba(0, 0, 0, 0.1);
+  }
+
+  h2 {
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--primary);
+    user-select: none;
+    letter-spacing: 0.04em;
+  }
+
+  .row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  input[type="text"],
+  input[type="time"],
+  select {
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 18px;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    background: var(--bg);
+    color: var(--text);
+    flex-grow: 1;
+    min-width: 160px;
+    max-width: 100%;
+    user-select: text;
+  }
+
+  input[type="text"]:focus,
+  input[type="time"]:focus,
+  select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 8px var(--primary);
+    outline: none;
+    background: var(--card);
+  }
+
+  input[type="time"],
+  select {
+    max-width: 130px;
+    flex-grow: 0;
+    text-align: center;
+  }
+
+  button {
+    background: var(--primary);
+    border-radius: 20px;
+    padding: 14px 20px;
+    border: none;
+    color: white;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    user-select: none;
+    box-shadow: 0 4px 14px rgba(14, 165, 233, 0.6);
+    transition: background 0.3s ease, transform 0.15s ease, box-shadow 0.3s ease;
+  }
+
+  button:hover,
+  button:focus {
+    background: var(--secondary);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 26px rgba(14, 165, 233, 0.85);
+    outline: none;
+  }
+
+  button:active {
+    transform: translateY(0);
+  }
+
+  ul {
+    list-style: none;
+    padding: 0;
+    margin-top: 8px;
+    max-height: 320px;
+    overflow-y: auto;
+    user-select: text;
+  }
+
+  li {
+    padding: 12px 16px;
+    border-radius: 16px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1rem;
+    transition: background-color 0.2s ease;
+  }
+
+  li:hover,
+  li:focus-within {
+    background-color: var(--hover-bg);
+    outline: none;
+    cursor: pointer;
+  }
+
+  li button.delete-btn {
+    background: transparent;
+    border: none;
+    font-weight: 700;
+    color: var(--danger-red);
+    font-size: 20px;
+    cursor: pointer;
+    user-select: none;
+    padding: 0 8px;
+    transition: color 0.25s ease;
+  }
+
+  li button.delete-btn:hover,
+  li button.delete-btn:focus {
+    color: #dc2635;
+    outline: none;
+  }
+
+  #calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    user-select: none;
+  }
+
+  #calendar-header button {
+    width: 36px;
+    height: 36px;
+    font-size: 22px;
+    font-weight: 700;
+    border-radius: 8px;
+    border: none;
+    background: var(--primary);
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.75);
+    transition: background 0.3s ease;
+  }
+
+  #calendar-header button:hover,
+  #calendar-header button:focus {
+    background: var(--secondary);
+    outline: none;
+  }
+
+  #currentMonthYear {
+    font-weight: 800;
+    font-size: 1.3rem;
+    color: var(--secondary);
+    letter-spacing: 0.05em;
+    user-select: none;
+  }
+
+  #calendar {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-gap: 12px;
+    background: var(--card);
+    border-radius: 24px;
+    padding: 16px;
+    margin-bottom: 32px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
+    user-select: none;
+  }
+
+  #calendar .day,
+  #calendar .day-header {
+    padding: 14px 0;
+    text-align: center;
+    border-radius: 14px;
+    flex-direction: column;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    letter-spacing: 0.01em;
+    font-weight: 600;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
+  }
+
+  #calendar .day-header {
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
+
+  #calendar .day {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    min-height: 58px;
+    cursor: pointer;
+    font-size: 1.05rem;
+    color: var(--text);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  }
+
+  #calendar .day:hover,
+  #calendar .day:focus-visible {
+    background: var(--primary);
+    color: white;
+    box-shadow: 0 6px 24px rgba(14, 165, 233, 0.65);
+    outline: none;
+  }
+
+  #calendar .selected {
+    background: var(--selected-blue);
+    color: white;
+    box-shadow: 0 8px 28px rgba(10, 99, 183, 0.9);
+    font-weight: 700;
+  }
+
+  #calendar .dot-container {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  #calendar .dot {
+    width: 10px;
+    height: 10px;
+    background-color: var(--dot-light-blue);
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(126, 200, 255, 0.8);
+  }
+
+  #calendar .count {
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 0.9rem;
+    margin-top: 6px;
+    user-select: none;
+  }
+
+  @media (max-width: 600px) {
+    #calendar {
+      grid-gap: 8px;
+      padding: 12px;
+    }
+    #calendar .day,
+    #calendar .day-header {
+      padding: 10px 0;
+      font-size: 0.95rem;
+    }
+    #calendar .dot {
+      width: 8px;
+      height: 8px;
+    }
+    #calendar .count {
+      font-size: 0.8rem;
+    }
+    .card {
+      padding: 12px 16px;
+      border-radius: 14px;
+    }
+    button,
+    input[type="text"],
+    input[type="time"],
+    select {
+      font-size: 0.9rem;
+    }
+    .row input[type="text"] {
+      flex: 1 1 62%;
+      padding: 10px;
+    }
+    .row input[type="time"] {
+      width: 75px;
+      padding: 10px;
+    }
+    .row button {
+      padding: 10px 14px;
+      font-size: 0.9rem;
+    }
+  }
 </style>
-</head>
 
 <body>
 <header>Family Board</header>
@@ -86,7 +458,6 @@
 
     const householdId = "default";
 
-    // DOM elemek
     const calendarElem = document.getElementById("calendar");
     const currentMonthYearSpan = document.getElementById("currentMonthYear");
     const prevMonthBtn = document.getElementById("prevMonth");
@@ -237,10 +608,8 @@
       refreshCalendar();
     });
 
-    // Dark mode toggle
-    const savedTheme = localStorage.getItem("theme");
-    if (savedTheme) {
-      rootElem.setAttribute("data-theme", savedTheme);
+    if (localStorage.getItem("theme")) {
+      rootElem.setAttribute("data-theme", localStorage.getItem("theme"));
     }
 
     toggleBtn.addEventListener("click", () => {
@@ -257,8 +626,7 @@
     let unsubscribeTasks = null;
     function loadTasks() {
       if (unsubscribeTasks) unsubscribeTasks();
-      const tasksRef = collection(db, `households/${householdId}/tasks`);
-      const q = query(tasksRef, orderBy("createdAt", "desc"));
+      const q = query(collection(db, `households/${householdId}/tasks`), orderBy("createdAt", "desc"));
       unsubscribeTasks = onSnapshot(q, (snapshot) => {
         const dateStr = formatDate(selectedDate);
         const tasks = [];
@@ -312,8 +680,7 @@
     let unsubscribeShopping = null;
     function loadShopping() {
       if (unsubscribeShopping) unsubscribeShopping();
-      const shoppingRef = collection(db, `households/${householdId}/shopping`);
-      const q = query(shoppingRef, orderBy("createdAt", "desc"));
+      const q = query(collection(db, `households/${householdId}/shopping`), orderBy("createdAt", "desc"));
       unsubscribeShopping = onSnapshot(q, (snapshot) => {
         const items = [];
         snapshot.forEach((doc) => {
