@@ -3,130 +3,94 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="theme-color" content="#0ea5e9" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0ea5e9">
   <title>FamilyBoard v11d-final</title>
-  <link rel="manifest" href="./manifest.webmanifest?v=11d-final" />
+  <link rel="manifest" href="./manifest.webmanifest?v=11d-final">
   <style>
-    :root {
-      --primary: #0ea5e9;
-      --bg: #f6f8fb;
-      --card: #fff;
-      --text: #222;
-      --muted: #6b7280;
-      --border: #e5e7eb;
-    }
-    * {
-      box-sizing: border-box;
-    }
-    body {
-      margin: 0;
-      background: var(--bg);
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      color: var(--text);
-    }
-    header {
-      background: var(--primary);
-      color: #fff;
-      text-align: center;
-      padding: 14px;
-      font-weight: 700;
-      font-size: 18px;
-    }
-    .center {
-      max-width: 520px;
-      margin: 24px auto;
-    }
-    .card {
-      background: var(--card);
-      padding: 14px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-    }
-    .muted {
-      color: var(--muted);
-    }
-    input[type="text"],
-    input[type="time"] {
-      padding: 12px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      font-size: 16px;
-    }
-    input[type="text"] {
-      flex: 1;
-    }
-    input[type="time"] {
-      width: 98px;
-    }
-    .row {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-    button {
-      border: none;
-      border-radius: 10px;
-      padding: 10px 14px;
-      font-size: 16px;
-      background: var(--primary);
-      color: #fff;
-      cursor: pointer;
-    }
-    button.ghost {
-      background: #fff;
-      color: var(--primary);
-      border: 1px solid var(--primary);
-    }
-    ul {
-      list-style: none;
-      padding: 0;
-      margin-top: 12px;
-    }
-    li {
-      padding: 10px;
-      border-bottom: 1px solid var(--border);
-    }
+    :root{--primary:#0ea5e9;--bg:#f6f8fb;--card:#fff;--text:#222;--muted:#6b7280;--border:#e5e7eb;}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--text);}
+    header{background:var(--primary);color:#fff;text-align:center;padding:14px;font-weight:700;font-size:18px;}
+    .center{max-width:520px;margin:24px auto;}
+    .card{background:var(--card);padding:14px;border-radius:12px;border:1px solid var(--border);}
+    .muted{color:var(--muted)}
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .small{font-size:13px}
+    ul{list-style:none;padding:0;margin-top:12px;}
+    li{display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid var(--border);}
+    li:last-child{border-bottom:none}
+    li input[type="checkbox"]{transform:scale(1.2);cursor:pointer}
+    li span.text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .badge-time{font-size:12px;background:#0ea5e91a;color:#0369a1;border:1px solid #bae6fd;padding:3px 8px;border-radius:999px;cursor:pointer}
+    button{border:none;border-radius:10px;padding:10px 14px;font-size:16px;background:var(--primary);color:#fff;cursor:pointer;}
+    button.ghost{background:#fff;color:#0ea5e9;border:1px solid #0ea5e9;}
+    input[type="text"], input[type="time"]{padding:12px;border-radius:10px;border:1px solid var(--border);font-size:16px;}
+    input[type="text"]{flex:1}
+    input[type="time"]{width:98px}
+    .cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+    .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+    .dow{text-align:center;color:#6b7280;font-size:12px;padding:6px 0;}
+    .day{padding:6px 6px 10px;border-radius:10px;background:#fff;border:1px solid var(--border);text-align:right;cursor:pointer;user-select:none;display:flex;flex-direction:column;align-items:flex-end;min-height:48px;font-size:14px}
+    .day.selected{outline:2px solid var(--primary);}
+    .day.out{background:#f1f1f1;color:#bbb;}
+    .dots{display:flex;gap:3px;align-self:center;margin-top:4px;min-height:8px}
+    .dot{width:6px;height:6px;border-radius:50%;background:var(--primary)}
+    .dot.more{width:auto;height:auto;border-radius:6px;padding:0 4px;font-size:10px;line-height:14px;background:#0ea5e91a;color:#0369a1;border:1px solid #bae6fd}
   </style>
 </head>
 
 <body>
 <header>Family Board</header>
+<!-- PIN kapu -->
+<div id="gate" class="center card">
+  <h2>PIN szükséges</h2>
+  <p class="muted">Első csatlakozáskor add meg a PIN-t.</p>
+  <div id="gateMsg" class="muted"></div>
+</div>
 
-<div id="app" class="center">
+<!-- APP -->
+<div id="app" class="center" hidden>
+  <!-- NAPTÁR -->
+  <div class="card">
+    <div class="cal-head">
+      <button id="prev" class="ghost">◀</button>
+      <h3 id="monthLabel">Hónap</h3>
+      <button id="next" class="ghost">▶</button>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+  </div>
+  <!-- TEENDŐK időponttal -->
   <div class="card" style="margin-top:16px">
     <div class="row" style="justify-content:space-between">
-      <h2 style="margin:0">📋 Teendők</h2>
+      <h2 style="margin:0">📋 Teendők – <span id="taskDate" class="small muted">—</span></h2>
       <div class="row" style="flex:0 0 auto">
         <input type="text" id="taskInput" placeholder="Új teendő…" />
-        <input type="time" id="taskTime" aria-label="Idő (HH:MM)" />
+        <input type="time" id="taskTime" aria-label="Idő (HH:MM)">
         <button id="addTask" title="Hozzáadás">+</button>
       </div>
     </div>
     <ul id="taskList"></ul>
   </div>
+  <!-- BEVÁSÁRLÓLISTA -->
+  <div class="card" style="margin-top:16px">
+    <h2>🛒 Bevásárlólista</h2>
+    <div class="row">
+      <input type="text" id="shopInput" placeholder="Új tétel..." />
+      <button id="addItem">+</button>
+    </div>
+    <ul id="shopList"></ul>
+  </div>
 </div>
-
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signInAnonymously, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
   import {
-    getAuth,
-    onAuthStateChanged,
-    signInAnonymously,
-    setPersistence,
-    browserLocalPersistence,
-  } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
-  import {
-    getFirestore,
-    enableIndexedDbPersistence,
-    collection,
-    addDoc,
-    query,
-    orderBy,
-    onSnapshot,
+    getFirestore, enableIndexedDbPersistence,
+    doc, setDoc, getDoc, collection, addDoc, query, where, onSnapshot, deleteDoc, updateDoc
   } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
+  /* --- Firebase init --- */
   const firebaseConfig = {
     apiKey: "AIzaSyAeoxtOe5Cleasm3KdeSHP9WDR3PkU-N1I",
     authDomain: "mosas-nyilvantartas.firebaseapp.com",
@@ -135,103 +99,270 @@
     messagingSenderId: "38259241645",
     appId: "1:38259241645:web:26070b1d0686def9f00c24"
   };
-
   initializeApp(firebaseConfig);
   const auth = getAuth();
-  setPersistence(auth, browserLocalPersistence);
   const db = getFirestore();
-  enableIndexedDbPersistence(db).catch(() => {});
+  setPersistence(auth, browserLocalPersistence);
+  enableIndexedDbPersistence(db).catch(()=>{});
 
-  const householdId = "default";
+  /* Állandók */
+  const PIN="2025";
+  const householdId="default";
 
-  // --- Notification permission kérés ---
-  async function requestNotificationPermission() {
-    if (!("Notification" in window)) {
-      alert("Ez a böngésző nem támogatja az értesítéseket.");
-      return false;
-    }
-    if (Notification.permission === "granted") return true;
-    if (Notification.permission !== "denied") {
-      const permission = await Notification.requestPermission();
-      return permission === "granted";
-    }
-    return false;
-  }
+  /* Elek */
+  const pad=n=>String(n).padStart(2,"0");
+  const ymd=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const gate=document.getElementById("gate");
+  const app=document.getElementById("app");
+  const gateMsg=document.getElementById("gateMsg");
+  const showGate=()=>{ gate.hidden=false; app.hidden=true; };
+  const showApp =()=>{ gate.hidden=true; app.hidden=false; };
+  const validTime = (t)=>/^([01]\d|2[0-3]):[0-5]\d$/.test(t);
 
-  // --- Local notification megjelenítés ---
-  function showLocalNotification(title, body) {
-    if (Notification.permission !== "granted") return;
-    new Notification(title, {
-      body,
-      icon: "icons/icon-192.png",
-    });
-  }
+  /* --- Auth + PIN kapu --- */
+  onAuthStateChanged(auth, async(u)=>{
+    if(!u){ showGate(); await signInAnonymously(auth); return; }
+    const ref = doc(db,`households/${householdId}/members/${u.uid}`);
+    const snap = await getDoc(ref);
+    if(snap.exists()){ showApp(); boot(); return; }
+    showGate();
+    const pin = prompt("Háztartás PIN:");
+    if(pin!==PIN){ gateMsg.textContent="Hibás PIN!"; return; }
+    await setDoc(ref,{ok:true, joinedAt:Date.now()});
+    showApp(); boot();
+  });
 
-  // --- HTML elemek ---
-  const taskInput = document.getElementById("taskInput");
-  const taskTime = document.getElementById("taskTime");
-  const addTask = document.getElementById("addTask");
-  const taskList = document.getElementById("taskList");
+  /* --- Naptár + pöttyök --- */
+  const calGrid=document.getElementById("calGrid");
+  const monthLabel=document.getElementById("monthLabel");
+  const taskDateEl=document.getElementById("taskDate");
+  let current=new Date();
+  let cm=current.getMonth(), cy=current.getFullYear();
+  let selectedYMD = ymd(current);
 
-  // --- Teendők megjelenítése ---
-  function renderTasks(tasks) {
-    taskList.innerHTML = "";
-    tasks.forEach((task) => {
-      const li = document.createElement("li");
-      li.textContent = (task.time ? "[" + task.time + "] " : "") + task.text;
-      taskList.appendChild(li);
-    });
-  }
+  let taskCounts = new Map();
+  let unsubTaskCounts = null;
 
-  // --- Teendők betöltése és listen ---
-  function listenTasks() {
-    const tasksRef = collection(db, `households/${householdId}/tasks`);
-    const q = query(tasksRef, orderBy("createdAt", "desc"));
-    return onSnapshot(q, (snapshot) => {
-      const todos = [];
-      snapshot.forEach((doc) => {
-        todos.push(doc.data());
+  function subscribeTaskCounts(){
+    if (unsubTaskCounts) unsubTaskCounts();
+    unsubTaskCounts = onSnapshot(collection(db, `households/${householdId}/tasks`), snap=>{
+      const counts = new Map();
+      snap.forEach(d=>{
+        const data = d.data();
+        if(!data.date) return;
+        counts.set(data.date, (counts.get(data.date)||0) + 1);
       });
-      renderTasks(todos);
+      taskCounts = counts;
+      renderCalendar();
     });
   }
 
-  // --- Új teendő hozzáadása ---
-  addTask.addEventListener("click", async () => {
-    const text = taskInput.value.trim();
-    const time = taskTime.value.trim();
-    if (!text) return alert("Adj meg egy teendőt!");
-    await addDoc(collection(db, `households/${householdId}/tasks`), {
-      text,
-      time: time || "",
-      createdAt: Date.now(),
+  function renderCalendar(){
+    calGrid.innerHTML="";
+    const f=new Date(cy,cm,1);
+    monthLabel.textContent=`${cy}. ${f.toLocaleString("hu-HU",{month:"long"})}`;
+
+    ["H","K","Sze","Cs","P","Szo","V"].forEach(d=>{
+      const el=document.createElement("div"); el.className="dow"; el.textContent=d;
+      calGrid.appendChild(el);
     });
-    showLocalNotification("Új teendő", `Feladat: ${text}`);
-    taskInput.value = "";
-    taskTime.value = "";
-  });
 
-  // --- Alkalmazás indítása ---
-  async function init() {
-    await signInAnonymously(auth);
-    await requestNotificationPermission();
-    listenTasks();
-  }
-
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      init();
-    } else {
-      signInAnonymously(auth);
+    const shift=(f.getDay()+6)%7;
+    for(let i=0;i<shift;i++){
+      const el=document.createElement("div");
+      el.className="day out";
+      calGrid.appendChild(el);
     }
+
+    const days=new Date(cy,cm+1,0).getDate();
+    for(let d=1; d<=days; d++){
+      const el=document.createElement("div");
+      const dateObj=new Date(cy,cm,d);
+      const dayYMD = ymd(dateObj);
+      el.className="day" + (dayYMD===selectedYMD ? " selected":"");
+      el.textContent=d;
+
+      const c = taskCounts.get(dayYMD) || 0;
+      const dots=document.createElement("div");
+      dots.className="dots";
+      if(c>0){
+        const shown=Math.min(3,c);
+        for(let i=0;i<shown;i++){
+          const dot=document.createElement("span");
+          dot.className="dot";
+          dots.appendChild(dot);
+        }
+        if(c>3){
+          const more=document.createElement("span");
+          more.className="dot more";
+          more.textContent = `+${c-3}`;
+          dots.appendChild(more);
+        }
+      }
+      el.appendChild(dots);
+
+      el.onclick=()=>{ selectedYMD=dayYMD; renderCalendar(); updateTaskDate(); subscribeTasks(); };
+      calGrid.appendChild(el);
+    }
+  }
+  prev.onclick=()=>{ cm--; if(cm<0){cm=11;cy--;} renderCalendar(); };
+  next.onclick=()=>{ cm++; if(cm>11){cm=0; cy++;} renderCalendar(); };
+  function updateTaskDate(){ taskDateEl.textContent = selectedYMD; }
+
+  /* --- Teendők --- */
+  const taskInput=document.getElementById("taskInput");
+  const taskTime=document.getElementById("taskTime");
+  const addTask=document.getElementById("addTask");
+  const taskList=document.getElementById("taskList");
+  let unsubTasks=null;
+
+  const minutes=t=>{
+    if(!t || !validTime(t)) return 1e9;
+    const [h,m] = t.split(":").map(Number);
+    return h*60 + m;
+  }
+
+  function subscribeTasks(){
+    if(unsubTasks) unsubTasks();
+    const qref = query(collection(db, `households/${householdId}/tasks`),
+      where("date","==",selectedYMD));
+    unsubTasks = onSnapshot(qref, snap=>{
+      const arr=[];
+      snap.forEach(s=>arr.push({id:s.id, ...s.data()}));
+      arr.sort((a,b)=>{
+        if(!!a.done !== !!b.done) return a.done ? 1 : -1;
+        if(minutes(a.time) !== minutes(b.time))
+          return minutes(a.time) - minutes(b.time);
+        return (a.createdAt||0) - (b.createdAt||0);
+      });
+      renderTasks(arr);
+    });
+  }
+
+  function renderTasks(items){
+    taskList.innerHTML="";
+    if(!items.length){
+      taskList.innerHTML="<li><span class='text muted'>Nincs teendő ezen a napon.</span></li>";
+      return;
+    }
+    for(const t of items){
+      const li=document.createElement("li");
+      const cb=document.createElement("input");
+      cb.type="checkbox"; cb.checked=!!t.done;
+
+      const timeBadge=document.createElement("span");
+      timeBadge.className="badge-time";
+      timeBadge.textContent = t.time && validTime(t.time) ? `🕒 ${t.time}` : "—";
+      timeBadge.onclick = async()=>{
+        const nv=prompt("Idő (HH:MM, üres = nincs)", t.time || "");
+        if(nv===null) return;
+        let v=nv.trim();
+        if(v && !validTime(v)){ alert("Hibás idő!"); return; }
+        await updateDoc(doc(db,`households/${householdId}/tasks/${t.id}`),{time:v});
+      };
+
+      const span=document.createElement("span");
+      span.className="text"; span.textContent=t.text;
+      if(cb.checked) span.style.textDecoration="line-through";
+
+      cb.onchange=()=>updateDoc(
+        doc(db,`households/${householdId}/tasks/${t.id}`),
+        {done:cb.checked});
+
+      const del=document.createElement("button");
+      del.className="ghost"; del.textContent="🗑️";
+      del.onclick=()=>{
+        const pin = prompt("Törléshez add meg a PIN kódot:");
+        if (pin !== PIN) {
+          alert("Hibás PIN! Nem törölhető.");
+          return;
+        }
+        deleteDoc(doc(db,`households/${householdId}/tasks/${t.id}`));
+      };
+
+      li.append(cb,timeBadge,span,del);
+      taskList.append(li);
+    }
+  }
+
+  addTask.onclick=async()=>{
+    const text=taskInput.value.trim();
+    let time=(taskTime.value||"").trim();
+    if(time && !validTime(time)) return alert("Hibás idő!");
+    if(!text) return;
+    await addDoc(collection(db,`households/${householdId}/tasks`),{
+      text,time:time||"",done:false,date:selectedYMD,
+      createdAt:Date.now()
+    });
+    taskInput.value=""; taskTime.value="";
+  };
+
+  /* --- Bevásárlólista --- */
+  const shopInput=document.getElementById("shopInput");
+  const addItem=document.getElementById("addItem");
+  const shopList=document.getElementById("shopList");
+
+  onSnapshot(query(collection(db,`households/${householdId}/shopping`)), snap=>{
+    shopList.innerHTML="";
+    const arr=[];
+    snap.forEach(d=>arr.push({id:d.id, ...d.data()}));
+    arr.sort((a,b)=>{
+      if(!!a.done !== !!b.done) return a.done ? 1 : -1;
+      const ac = (a.createdAt ?? Number.MAX_SAFE_INTEGER);
+      const bc = (b.createdAt ?? Number.MAX_SAFE_INTEGER);
+      return ac - bc;
+    });
+    if(!arr.length){
+      shopList.innerHTML="<li><span class='text muted'>Nincs tétel.</span></li>";
+      return;
+    }
+    arr.forEach(item=>{
+      const li=document.createElement("li");
+      const cb=document.createElement("input");
+      cb.type="checkbox"; cb.checked=item.done||false;
+      const txt=document.createElement("span");
+      txt.className="text"; txt.textContent=item.text;
+      if(cb.checked) txt.style.textDecoration="line-through";
+      cb.onchange=()=>updateDoc(
+        doc(db,`households/${householdId}/shopping/${item.id}`),
+        {done:cb.checked, createdAt:item.createdAt||Date.now()});
+      const del=document.createElement("button");
+      del.className="ghost"; del.textContent="🗑️";
+      del.onclick=()=>{
+        const pin = prompt("Törléshez add meg a PIN kódot:");
+        if (pin !== PIN) {
+          alert("Hibás PIN! Nem törölhető.");
+          return;
+        }
+        deleteDoc(doc(db,`households/${householdId}/shopping/${item.id}`));
+      };
+      li.append(cb,txt,del);
+      shopList.appendChild(li);
+    });
   });
+
+  addItem.onclick=async()=>{
+    const text=shopInput.value.trim();
+    if(!text) return;
+    await addDoc(collection(db,`households/${householdId}/shopping`),{
+      text,done:false,createdAt:Date.now()
+    });
+    shopInput.value="";
+  };
+
+  function boot(){
+    selectedYMD = ymd(new Date());
+    updateTaskDate();
+    subscribeTaskCounts();
+    renderCalendar();
+    subscribeTasks();
+  }
 </script>
 
 <script>
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./sw.js?v=11d-final");
-  }
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js?v=11d-final');
+}
 </script>
-
 </body>
 </html>
