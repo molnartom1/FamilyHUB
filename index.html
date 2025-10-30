@@ -54,6 +54,7 @@
     .center {
       max-width: 520px;
       margin: 24px auto;
+      padding: 0 10px;
     }
 
     .card {
@@ -161,9 +162,49 @@
     }
 
     #calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      grid-gap: 6px;
+      background: var(--card);
+      border-radius: 12px;
+      padding: 10px;
       margin-bottom: 20px;
+      user-select: none;
+    }
+
+    #calendar .day,
+    #calendar .day-header {
+      padding: 8px;
       text-align: center;
-      font-weight: 600;
+      border-radius: 6px;
+    }
+
+    #calendar .day-header {
+      font-weight: bold;
+      color: var(--primary);
+    }
+
+    #calendar .day {
+      cursor: pointer;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      min-height: 40px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      user-select: none;
+      transition: background 0.3s;
+    }
+
+    #calendar .day:hover {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    #calendar .selected {
+      background: var(--primary);
+      color: #fff;
+      font-weight: bold;
     }
   </style>
 </head>
@@ -176,15 +217,12 @@
   </button>
 
   <div id="app" class="center">
-    <!-- Naptár -->
-    <div id="calendar" class="card">
-      <button id="prevDay">&lt;</button>
-      <span id="currentDate"></span>
-      <button id="nextDay">&gt;</button>
-    </div>
+
+    <!-- Teljes méretű havi naptár -->
+    <div id="calendar"></div>
 
     <!-- Teendők -->
-    <div class="card">
+    <div class="card" aria-label="Teendő lista">
       <h2>📋 Teendők</h2>
       <div class="row">
         <input type="text" id="taskInput" placeholder="Új teendő…" aria-label="Új teendő" />
@@ -195,7 +233,7 @@
     </div>
 
     <!-- Bevásárlólista -->
-    <div class="card">
+    <div class="card" aria-label="Bevásárlólista">
       <h2>🛒 Bevásárlólista</h2>
       <div class="row">
         <input type="text" id="shoppingInput" placeholder="Új tétel…" aria-label="Új tétel" />
@@ -226,7 +264,6 @@
       doc,
     } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
-    // Firebase config inicializálás
     const firebaseConfig = {
       apiKey: "AIzaSyAeoxtOe5Cleasm3KdeSHP9WDR3PkU-N1I",
       authDomain: "mosas-nyilvantartas.firebaseapp.com",
@@ -243,32 +280,13 @@
 
     const householdId = "default";
 
-    // Dátumkezelés és naptár kezdete
-    let selectedDate = new Date();
-    const prevDayBtn = document.getElementById("prevDay");
-    const nextDayBtn = document.getElementById("nextDay");
-    const currentDateSpan = document.getElementById("currentDate");
-
-    // Teendők
-    const taskInput = document.getElementById("taskInput");
-    const taskTime = document.getElementById("taskTime");
-    const addTask = document.getElementById("addTask");
-    const taskList = document.getElementById("taskList");
-
-    // Bevásárlólista
-    const shoppingInput = document.getElementById("shoppingInput");
-    const addShopping = document.getElementById("addShopping");
-    const shoppingList = document.getElementById("shoppingList");
-
     // --- Dark mode toggle ---
     const toggleBtn = document.getElementById('darkModeToggle');
     const rootElem = document.documentElement;
-
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme) {
       rootElem.setAttribute('data-theme', savedTheme);
     }
-
     toggleBtn.addEventListener('click', () => {
       const currentTheme = rootElem.getAttribute('data-theme');
       if (currentTheme === 'dark') {
@@ -303,7 +321,7 @@
       });
     }
 
-    // Segítő függvény dátum formázására YYYY-MM-DD formátumban
+    // --- Dátum formázás ---
     function formatDate(date) {
       const y = date.getFullYear();
       const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -311,38 +329,67 @@
       return `${y}-${m}-${d}`;
     }
 
-    // Naptár megjelenítés frissítése
-    function updateCalendar() {
-      currentDateSpan.textContent = selectedDate.toLocaleDateString("hu-HU", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        weekday: "long"
+    // --- Havi naptár generálása és megjelenítése ---
+    let selectedDate = new Date();
+
+    const calendarElem = document.getElementById('calendar');
+
+    function createCalendar(year, month) {
+      calendarElem.innerHTML = '';
+
+      // Napok nevei
+      const daysOfWeek = ['H', 'K', 'Sze', 'Cs', 'P', 'Szo', 'V'];
+      daysOfWeek.forEach(day => {
+        const header = document.createElement('div');
+        header.textContent = day;
+        header.classList.add('day-header');
+        calendarElem.appendChild(header);
       });
-      loadTasks();
-      loadShopping();
+
+      const firstDay = new Date(year, month, 1);
+      const lastDay = new Date(year, month + 1, 0);
+      const startDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1; // hetet hétfővel kezdjük
+      const daysInMonth = lastDay.getDate();
+
+      // Üres napok az első sorba
+      for (let i = 0; i < startDay; i++) {
+        const emptyCell = document.createElement('div');
+        emptyCell.classList.add('day');
+        calendarElem.appendChild(emptyCell);
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dayCell = document.createElement('div');
+        dayCell.classList.add('day');
+        dayCell.textContent = day;
+        if (year === selectedDate.getFullYear() && month === selectedDate.getMonth() && day === selectedDate.getDate()) {
+          dayCell.classList.add('selected');
+        }
+        dayCell.addEventListener('click', () => {
+          selectedDate = new Date(year, month, day);
+          createCalendar(year, month);
+          loadTasks();
+          loadShopping();
+        });
+        calendarElem.appendChild(dayCell);
+      }
     }
 
-    prevDayBtn.addEventListener("click", () => {
-      selectedDate.setDate(selectedDate.getDate() - 1);
-      updateCalendar();
-    });
+    // --- Teendők ---
+    const taskInput = document.getElementById('taskInput');
+    const taskTime = document.getElementById('taskTime');
+    const addTask = document.getElementById('addTask');
+    const taskList = document.getElementById('taskList');
 
-    nextDayBtn.addEventListener("click", () => {
-      selectedDate.setDate(selectedDate.getDate() + 1);
-      updateCalendar();
-    });
-
-    // --- Teendők betöltése és listen ---
     let unsubscribeTasks = null;
     function loadTasks() {
       if (unsubscribeTasks) unsubscribeTasks();
       const tasksRef = collection(db, `households/${householdId}/tasks`);
-      const q = query(tasksRef, orderBy("createdAt", "desc"));
+      const q = query(tasksRef, orderBy('createdAt', 'desc'));
       unsubscribeTasks = onSnapshot(q, (snapshot) => {
         const dateStr = formatDate(selectedDate);
         const tasks = [];
-        snapshot.forEach((doc) => {
+        snapshot.forEach(doc => {
           const data = doc.data();
           if (data.date === dateStr) {
             tasks.push({ ...data, docId: doc.id });
@@ -351,101 +398,116 @@
         renderTasks(tasks);
       });
     }
-
-    // --- Teendők megjelenítése ---
     function renderTasks(tasks) {
-      taskList.innerHTML = "";
-      tasks.forEach((task) => {
-        const li = document.createElement("li");
-        li.textContent = (task.time ? "[" + task.time + "] " : "") + task.text;
-        const delBtn = document.createElement("button");
-        delBtn.className = "delete-btn";
-        delBtn.title = "Törlés";
-        delBtn.textContent = "✖";
-        delBtn.addEventListener("click", async () => {
+      taskList.innerHTML = '';
+      tasks.forEach(task => {
+        const li = document.createElement('li');
+        li.textContent = (task.time ? `[${task.time}] ` : '') + task.text;
+        const delBtn = document.createElement('button');
+        delBtn.className = 'delete-btn';
+        delBtn.title = 'Törlés';
+        delBtn.textContent = '✖';
+        delBtn.addEventListener('click', async () => {
+          // PIN kérés törlés előtt
+          const pin = prompt('Add meg a PIN kódot a törléshez:');
+          if (pin !== '2025') {
+            alert('Hibás PIN kód!');
+            return;
+          }
           await deleteDoc(doc(db, `households/${householdId}/tasks`, task.docId));
         });
         li.appendChild(delBtn);
         taskList.appendChild(li);
       });
     }
-
-    addTask.addEventListener("click", async () => {
+    addTask.addEventListener('click', async () => {
       const text = taskInput.value.trim();
       const time = taskTime.value.trim();
-      if (!text) return alert("Adj meg egy teendőt!");
+      if (!text) return alert('Adj meg egy teendőt!');
       const dateStr = formatDate(selectedDate);
       await addDoc(collection(db, `households/${householdId}/tasks`), {
         text,
-        time: time || "",
+        time: time || '',
         date: dateStr,
-        createdAt: Date.now(),
+        createdAt: Date.now()
       });
-      showLocalNotification("Új teendő", `Feladat: ${text}`);
-      taskInput.value = "";
-      taskTime.value = "";
+      showLocalNotification('Új teendő', `Feladat: ${text}`);
+      taskInput.value = '';
+      taskTime.value = '';
     });
 
-    // --- Bevásárlólista betöltése és listen ---
+    // --- Bevásárlólista ---
+    const shoppingInput = document.getElementById('shoppingInput');
+    const addShopping = document.getElementById('addShopping');
+    const shoppingList = document.getElementById('shoppingList');
+
     let unsubscribeShopping = null;
     function loadShopping() {
       if (unsubscribeShopping) unsubscribeShopping();
       const shoppingRef = collection(db, `households/${householdId}/shopping`);
-      const q = query(shoppingRef, orderBy("createdAt", "desc"));
+      const q = query(shoppingRef, orderBy('createdAt', 'desc'));
       unsubscribeShopping = onSnapshot(q, (snapshot) => {
         const items = [];
-        snapshot.forEach((doc) => {
+        snapshot.forEach(doc => {
           items.push({ ...doc.data(), docId: doc.id });
         });
         renderShopping(items);
       });
     }
-
-    // --- Bevásárlólista megjelenítése ---
     function renderShopping(items) {
-      shoppingList.innerHTML = "";
-      items.forEach((item) => {
-        const li = document.createElement("li");
+      shoppingList.innerHTML = '';
+      items.forEach(item => {
+        const li = document.createElement('li');
         li.textContent = item.text;
-        const delBtn = document.createElement("button");
-        delBtn.className = "delete-btn";
-        delBtn.title = "Törlés";
-        delBtn.textContent = "✖";
-        delBtn.addEventListener("click", async () => {
+        const delBtn = document.createElement('button');
+        delBtn.className = 'delete-btn';
+        delBtn.title = 'Törlés';
+        delBtn.textContent = '✖';
+        delBtn.addEventListener('click', async () => {
+          const pin = prompt('Add meg a PIN kódot a törléshez:');
+          if (pin !== '2025') {
+            alert('Hibás PIN kód!');
+            return;
+          }
           await deleteDoc(doc(db, `households/${householdId}/shopping`, item.docId));
         });
         li.appendChild(delBtn);
         shoppingList.appendChild(li);
       });
     }
-
-    addShopping.addEventListener("click", async () => {
+    addShopping.addEventListener('click', async () => {
       const text = shoppingInput.value.trim();
-      if (!text) return alert("Adj meg egy bevásárló tételt!");
+      if (!text) return alert('Adj meg egy bevásárló tételt!');
       await addDoc(collection(db, `households/${householdId}/shopping`), {
         text,
-        createdAt: Date.now(),
+        createdAt: Date.now()
       });
-      showLocalNotification("Új bevásárló tétel", `Tétel: ${text}`);
-      shoppingInput.value = "";
+      showLocalNotification('Új bevásárló tétel', `Tétel: ${text}`);
+      shoppingInput.value = '';
     });
 
-    // App indítása
+    // Alkalmazás inicializálása
     async function init() {
       await signInAnonymously(auth);
       await requestNotificationPermission();
-      updateCalendar();
+      createCalendar(selectedDate.getFullYear(), selectedDate.getMonth());
+      loadTasks();
+      loadShopping();
     }
 
     onAuthStateChanged(auth, (user) => {
-      if (user) init();
-      else signInAnonymously(auth);
+      if (user) {
+        init();
+      } else {
+        signInAnonymously(auth);
+      }
     });
+
   </script>
 
   <script>
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=11d-final");
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js?v=11d-final');
     }
   </script>
 
