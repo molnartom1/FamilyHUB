@@ -177,6 +177,7 @@
       padding: 8px;
       text-align: center;
       border-radius: 6px;
+      position: relative;
     }
 
     #calendar .day-header {
@@ -194,6 +195,7 @@
       align-items: center;
       user-select: none;
       transition: background 0.3s;
+      flex-direction: column;
     }
 
     #calendar .day:hover {
@@ -205,6 +207,14 @@
       background: var(--primary);
       color: #fff;
       font-weight: bold;
+    }
+
+    #calendar .dot {
+      width: 6px;
+      height: 6px;
+      background-color: var(--primary);
+      border-radius: 50%;
+      margin-top: 3px;
     }
   </style>
 </head>
@@ -262,6 +272,7 @@
       onSnapshot,
       deleteDoc,
       doc,
+      getDocs,
     } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -283,6 +294,7 @@
     // --- Dark mode toggle ---
     const toggleBtn = document.getElementById('darkModeToggle');
     const rootElem = document.documentElement;
+
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme) {
       rootElem.setAttribute('data-theme', savedTheme);
@@ -321,7 +333,7 @@
       });
     }
 
-    // --- Dátum formázás ---
+    // --- Date formázás ---
     function formatDate(date) {
       const y = date.getFullYear();
       const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -329,15 +341,43 @@
       return `${y}-${m}-${d}`;
     }
 
-    // --- Havi naptár generálása és megjelenítése ---
-    let selectedDate = new Date();
+    // --- Havi tételnapok betöltése a pöttyökhöz ---
+    let monthItems = new Set();
 
+    async function loadMonthItems(year, month) {
+      monthItems.clear();
+      const tasksRef = collection(db, `households/${householdId}/tasks`);
+      const shoppingRef = collection(db, `households/${householdId}/shopping`);
+      const monthStr = `${year}-${String(month + 1).padStart(2, "0")}`;
+
+      await Promise.all([
+        getDocs(tasksRef).then((snapshot) => {
+          snapshot.forEach((doc) => {
+            const data = doc.data();
+            if (data.date && data.date.startsWith(monthStr)) {
+              monthItems.add(data.date);
+            }
+          });
+        }),
+        getDocs(shoppingRef).then((snapshot) => {
+          snapshot.forEach((doc) => {
+            const data = doc.data();
+            if (data.date && data.date.startsWith(monthStr)) {
+              monthItems.add(data.date);
+            }
+          });
+        }),
+      ]);
+    }
+
+    // --- Naptár generálása ---
+    let selectedDate = new Date();
     const calendarElem = document.getElementById('calendar');
 
-    function createCalendar(year, month) {
-      calendarElem.innerHTML = '';
+    async function createCalendar(year, month) {
+      await loadMonthItems(year, month);
 
-      // Napok nevei
+      calendarElem.innerHTML = '';
       const daysOfWeek = ['H', 'K', 'Sze', 'Cs', 'P', 'Szo', 'V'];
       daysOfWeek.forEach(day => {
         const header = document.createElement('div');
@@ -348,10 +388,9 @@
 
       const firstDay = new Date(year, month, 1);
       const lastDay = new Date(year, month + 1, 0);
-      const startDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1; // hetet hétfővel kezdjük
+      const startDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
       const daysInMonth = lastDay.getDate();
 
-      // Üres napok az első sorba
       for (let i = 0; i < startDay; i++) {
         const emptyCell = document.createElement('div');
         emptyCell.classList.add('day');
@@ -362,15 +401,27 @@
         const dayCell = document.createElement('div');
         dayCell.classList.add('day');
         dayCell.textContent = day;
+
+        // Dátum sztring a hónaphoz
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+        if (monthItems.has(dateStr)) {
+          const dot = document.createElement('span');
+          dot.className = 'dot';
+          dayCell.appendChild(dot);
+        }
+
         if (year === selectedDate.getFullYear() && month === selectedDate.getMonth() && day === selectedDate.getDate()) {
           dayCell.classList.add('selected');
         }
+
         dayCell.addEventListener('click', () => {
           selectedDate = new Date(year, month, day);
           createCalendar(year, month);
           loadTasks();
           loadShopping();
         });
+
         calendarElem.appendChild(dayCell);
       }
     }
@@ -408,7 +459,6 @@
         delBtn.title = 'Törlés';
         delBtn.textContent = '✖';
         delBtn.addEventListener('click', async () => {
-          // PIN kérés törlés előtt
           const pin = prompt('Add meg a PIN kódot a törléshez:');
           if (pin !== '2025') {
             alert('Hibás PIN kód!');
@@ -486,7 +536,7 @@
       shoppingInput.value = '';
     });
 
-    // Alkalmazás inicializálása
+    // App inicializálása
     async function init() {
       await signInAnonymously(auth);
       await requestNotificationPermission();
@@ -502,7 +552,6 @@
         signInAnonymously(auth);
       }
     });
-
   </script>
 
   <script>
