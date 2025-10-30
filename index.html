@@ -7,10 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="theme-color" content="#0ea5e9" />
 <title>FamilyBoard v11d-final</title>
-
-<!-- OneSignal SDK -->
-<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-
+<link rel="manifest" href="./manifest.webmanifest?v=11d-final" />
 <style>
   :root {
     --primary: #0ea5e9;
@@ -247,6 +244,8 @@
     margin-top: 5px;
     user-select: none;
   }
+
+  /* Mobil optimalizált teendőmezők és gomb */
   @media (max-width: 480px) {
     .row input[type="text"] {
       flex: 1 1 60%;
@@ -299,25 +298,6 @@
   </div>
 </div>
 
-<script>
-  window.OneSignalDeferred = window.OneSignalDeferred || [];
-  OneSignalDeferred.push(async function (OneSignal) {
-    await OneSignal.init({
-      appId: "a09c2e51-7eca-434f-bd89-105731e16626",
-      notifyButton: {
-        enable: true,
-      },
-      allowLocalhostAsSecureOrigin: true,
-    });
-
-    OneSignal.isPushNotificationsEnabled(function (isEnabled) {
-      if (!isEnabled) {
-        OneSignal.showSlidedownPrompt();
-      }
-    });
-  });
-</script>
-
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
   import {
@@ -356,23 +336,52 @@
 
   const householdId = "default";
 
-  const calendarElem = document.getElementById("calendar");
-  const calendarHeader = document.getElementById("calendar-header");
-  const currentMonthYearSpan = document.getElementById("currentMonthYear");
-  const prevMonthBtn = document.getElementById("prevMonth");
-  const nextMonthBtn = document.getElementById("nextMonth");
+  const toggleBtn = document.getElementById('darkModeToggle');
+  const rootElem = document.documentElement;
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme) {
+    rootElem.setAttribute('data-theme', savedTheme);
+  }
+  toggleBtn.addEventListener('click', () => {
+    const currentTheme = rootElem.getAttribute('data-theme');
+    if (currentTheme === 'dark') {
+      rootElem.removeAttribute('data-theme');
+      localStorage.setItem('theme', 'light');
+    } else {
+      rootElem.setAttribute('data-theme', 'dark');
+      localStorage.setItem('theme', 'dark');
+    }
+  });
 
-  let selectedDate = new Date();
-  let selectedYear = selectedDate.getFullYear();
-  let selectedMonth = selectedDate.getMonth();
+  async function requestNotificationPermission() {
+    if (!("Notification" in window)) {
+      alert("Ez a böngésző nem támogatja az értesítéseket.");
+      return false;
+    }
+    if (Notification.permission === "granted") return true;
+    if (Notification.permission !== "denied") {
+      const permission = await Notification.requestPermission();
+      return permission === "granted";
+    }
+    return false;
+  }
+
+  function showLocalNotification(title, body) {
+    if (Notification.permission !== "granted") return;
+    new Notification(title, {
+      body,
+      icon: "icons/icon-192.png",
+    });
+  }
+
+  function formatDate(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
 
   let monthItemsCount = new Map();
-
-  function updateCurrentMonthYear(year, month) {
-    const date = new Date(year, month, 1);
-    const str = date.toLocaleDateString("hu-HU", { year: "numeric", month: "long" });
-    currentMonthYearSpan.textContent = str;
-  }
 
   async function loadMonthItemsCount(year, month) {
     monthItemsCount.clear();
@@ -400,6 +409,22 @@
     ]);
   }
 
+  const calendarElem = document.getElementById("calendar");
+  const calendarHeader = document.getElementById("calendar-header");
+  const currentMonthYearSpan = document.getElementById("currentMonthYear");
+  const prevMonthBtn = document.getElementById("prevMonth");
+  const nextMonthBtn = document.getElementById("nextMonth");
+
+  let selectedDate = new Date();
+  let selectedYear = selectedDate.getFullYear();
+  let selectedMonth = selectedDate.getMonth();
+
+  function updateCurrentMonthYear(year, month) {
+    const date = new Date(year, month, 1);
+    const str = date.toLocaleDateString("hu-HU", { year: "numeric", month: "long" });
+    currentMonthYearSpan.textContent = str;
+  }
+
   async function createCalendar(year, month) {
     await loadMonthItemsCount(year, month);
     calendarElem.innerHTML = "";
@@ -410,7 +435,6 @@
       header.classList.add("day-header");
       calendarElem.appendChild(header);
     });
-
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const startDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
@@ -492,7 +516,6 @@
     refreshCalendar();
   });
 
-  // Teendők és bevásárlólista kezelés
   const taskInput = document.getElementById("taskInput");
   const taskTime = document.getElementById("taskTime");
   const addTask = document.getElementById("addTask");
@@ -547,7 +570,7 @@
       date: dateStr,
       createdAt: Date.now(),
     });
-    // Push értesítések az OneSignal SDK kezeli, a dashboardról indíthatóak
+    showLocalNotification("Új teendő", `Feladat: ${text}`);
     taskInput.value = "";
     taskTime.value = "";
   });
@@ -597,7 +620,7 @@
       text,
       createdAt: Date.now(),
     });
-    // Push értesítések az OneSignal SDK kezeli, a dashboardról indíthatóak
+    showLocalNotification("Új bevásárló tétel", `Tétel: ${text}`);
     shoppingInput.value = "";
   });
 
@@ -617,9 +640,9 @@
 </script>
 
 <script>
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./sw.js?v=11d-final");
-  }
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("./sw.js?v=11d-final");
+}
 </script>
 
 </body>
