@@ -194,7 +194,7 @@
     color: #fff;
   }
   #calendar .selected {
-    background: var(--primary);
+    background: #0a63b7; /* sötétkék */
     color: #fff;
     font-weight: bold;
   }
@@ -207,7 +207,7 @@
   #calendar .dot {
     width: 8px;
     height: 8px;
-    background-color: var(--primary);
+    background-color: #7ec8ff; /* világoskék */
     border-radius: 50%;
   }
   #calendar .count {
@@ -345,22 +345,22 @@
     const monthStr = `${year}-${String(month + 1).padStart(2, "0")}`;
 
     await Promise.all([
-      getDocs(tasksRef).then((snapshot) => {
-        snapshot.forEach((doc) => {
+      getDocs(tasksRef).then(snapshot => {
+        snapshot.forEach(doc => {
           const data = doc.data();
           if (data.date && data.date.startsWith(monthStr)) {
             monthItemsCount.set(data.date, (monthItemsCount.get(data.date) || 0) + 1);
           }
         });
       }),
-      getDocs(shoppingRef).then((snapshot) => {
-        snapshot.forEach((doc) => {
+      getDocs(shoppingRef).then(snapshot => {
+        snapshot.forEach(doc => {
           const data = doc.data();
           if (data.date && data.date.startsWith(monthStr)) {
             monthItemsCount.set(data.date, (monthItemsCount.get(data.date) || 0) + 1);
           }
         });
-      }),
+      })
     ]);
   }
 
@@ -384,7 +384,7 @@
     await loadMonthItemsCount(year, month);
     calendarElem.innerHTML = "";
     const daysOfWeek = ["H", "K", "Sze", "Cs", "P", "Szo", "V"];
-    daysOfWeek.forEach((day) => {
+    daysOfWeek.forEach(day => {
       const header = document.createElement("div");
       header.textContent = day;
       header.classList.add("day-header");
@@ -595,9 +595,9 @@
 </script>
 
 <script>
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./sw.js?v=11d-final");
-  }
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("./sw.js?v=11d-final");
+}
 </script>
 
 </body>
