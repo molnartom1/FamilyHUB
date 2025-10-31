@@ -2,12 +2,12 @@
 <html lang="hu">
 
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1"/>
-<meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="theme-color" content="#0ea5e9"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0ea5e9">
 <title>FamilyBoard v11d-final</title>
-<link rel="manifest" href="./manifest.webmanifest?v=11d-final"/>
+<link rel="manifest" href="./manifest.webmanifest?v=11d-final">
 <style>
   :root {
     --primary: #0ea5e9;
@@ -408,18 +408,20 @@
     }
   }
 </style>
-</head>
 
+</head>
 <body>
+
 <header>Family Board
   <button id="darkModeToggle" aria-label="Sötét mód kapcsoló" title="Sötét mód váltó">
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24" viewBox="0 0 24 24" class="feather feather-moon">
-      <path d="M21 12.79A9 9 0 0111.21 3a7 7 0 0010.79 9.79z"></path>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon" viewBox="0 0 24 24">
+      <path d="M21 12.79A9 9 0 0111.21 3a7 7 0 0010.79 9.79z"/>
     </svg>
   </button>
 </header>
 
 <div id="app" class="center">
+
   <div id="calendar-header">
     <button id="prevMonth" aria-label="Előző hónap" title="Előző hónap">&lt;</button>
     <span id="currentMonthYear" aria-live="polite"></span>
@@ -446,30 +448,13 @@
     </div>
     <ul id="shoppingList" tabindex="0"></ul>
   </div>
+
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
-import {
-  getAuth,
-  onAuthStateChanged,
-  signInAnonymously,
-  setPersistence,
-  browserLocalPersistence
-} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
-import {
-  getFirestore,
-  enableIndexedDbPersistence,
-  collection,
-  addDoc,
-  updateDoc,
-  query,
-  orderBy,
-  onSnapshot,
-  deleteDoc,
-  doc,
-  getDocs
-} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+import { getAuth, onAuthStateChanged, signInAnonymously, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+import { getFirestore, enableIndexedDbPersistence, collection, addDoc, updateDoc, query, orderBy, onSnapshot, deleteDoc, doc, getDocs } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   const firebaseConfig = {
@@ -727,6 +712,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       });
       renderTasks(tasks);
+      refreshCalendar(); // Itt frissítjük a pöttyöket is
     });
   }
 
@@ -739,6 +725,7 @@ document.addEventListener("DOMContentLoaded", () => {
         items.push({ ...doc.data(), docId: doc.id });
       });
       renderShopping(items);
+      refreshCalendar(); // Itt is frissítés
     });
   }
 
@@ -788,11 +775,12 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 </script>
+
 <script>
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("./sw.js?v=11d-final");
   }
 </script>
-</body>
 
+</body>
 </html>
