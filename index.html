@@ -1,10 +1,8 @@
 <!DOCTYPE html>
 <html lang="hu">
-
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1"/>
-<meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="theme-color" content="#0ea5e9"/>
 <title>FamilyBoard v11d-final</title>
 <link rel="manifest" href="./manifest.webmanifest?v=11d-final"/>
@@ -21,6 +19,8 @@
     --selected-blue: #0a63b7;
     --dot-light-blue: #7ec8ff;
     --danger-red: #e11d48;
+    --done-bg: #d2eaf3;
+    --done-txt: #b2b2b2;
   }
   [data-theme="dark"] {
     --primary: #9cf;
@@ -34,120 +34,33 @@
     --selected-blue: #2962ff;
     --dot-light-blue: #5599ff;
     --danger-red: #f87171;
+    --done-bg: #1a2932;
+    --done-txt: #666;
   }
-  * {
-    box-sizing: border-box;
-  }
-  body {
-    margin: 0;
-    background-color: var(--bg);
-    color: var(--text);
-    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    transition: background-color 0.3s ease, color 0.3s ease;
-  }
+  body { background: var(--bg); color: var(--text); font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; }
   header {
     background: linear-gradient(135deg, var(--secondary), var(--primary));
-    color: white;
-    padding: 16px 0;
-    text-align: center;
-    font-weight: 700;
-    font-size: 1.4rem;
-    border-radius: 0 0 24px 24px;
-    box-shadow: 0 4px 8px rgba(14, 165, 233, 0.4);
-    user-select: none;
+    color: white; padding: 16px 0; text-align: center; font-weight: 700; font-size: 1.4rem;
+    border-radius: 0 0 24px 24px; box-shadow: 0 4px 8px rgba(14, 165, 233, 0.4); user-select: none;
   }
-  #darkModeToggle {
-    position: fixed;
-    top: 12px;
-    right: 12px;
-    background: var(--primary);
-    border: none;
-    color: white;
-    padding: 8px 16px;
-    border-radius: 20px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.7);
-    transition: background 0.25s ease;
-    user-select: none;
-    z-index: 1000;
+  #darkModeToggle { position: fixed; top: 12px; right: 12px; background: var(--primary); border: none;
+    color: white; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 0.9rem; box-shadow: 0 2px 8px rgba(14, 165, 233, 0.7); z-index: 1000;
   }
-  #darkModeToggle:hover,
-  #darkModeToggle:focus {
-    background: var(--secondary);
-    outline: none;
-  }
-  .center {
-    max-width: 600px;
-    margin: 28px auto;
-    padding: 0 16px;
-  }
-  .card {
-    background: var(--card);
-    border-radius: 20px;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.07);
-    padding: 20px 24px;
-    margin-bottom: 28px;
-    border: none;
-    transition: box-shadow 0.3s ease;
-  }
-  .card:hover {
-    box-shadow: 0 8px 26px rgba(0, 0, 0, 0.1);
-  }
-  h2 {
-    font-weight: 700;
-    margin-bottom: 16px;
-    color: var(--primary);
-    user-select: none;
-    letter-spacing: 0.04em;
-  }
-  .row {
-    display: flex;
-    gap: 12px;
-    flex-wrap: nowrap;
-    align-items: center;
-  }
-  #taskInput,
-  #shoppingInput {
-    flex: 2 1 0px;
-    min-width: 0;
-  }
-  #taskTimeFrom,
-  #taskTimeTo {
-    flex: 1 1 0px;
-    min-width: 70px;
-  }
+  .center { max-width: 600px; margin: 28px auto; padding: 0 16px; }
+  .card { background: var(--card); border-radius: 20px; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.07); padding: 20px 24px; margin-bottom: 28px; border: none; }
+  h2 { font-weight: 700; margin-bottom: 16px; color: var(--primary); user-select: none; letter-spacing: 0.04em; }
+  .row { display: flex; gap: 12px; flex-wrap: nowrap; align-items: center; }
+  #taskInput, #shoppingInput { flex: 2 1 0px; min-width: 0; }
+  #taskTimeFrom, #taskTimeTo { flex: 1 1 0px; min-width: 70px; }
   #addTask, #addShopping {
-    flex: 0 0 48px;
-    width: 48px;
-    height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-left: auto;
+    flex: 0 0 48px; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; margin-left: auto;
   }
-  input[type="text"],
-  input[type="time"],
-  select {
-    border: 1.5px solid var(--border);
-    border-radius: 14px;
-    padding: 14px 18px;
-    font-size: 1rem;
-    font-weight: 500;
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
-    background: var(--bg);
-    color: var(--text);
-    user-select: text;
+  input[type="text"], input[type="time"], select {
+    border: 1.5px solid var(--border); border-radius: 14px; padding: 14px 18px; font-size: 1rem;
+    background: var(--bg); color: var(--text); user-select: text; font-weight: 500;
   }
-  input[type="text"]:focus,
-  input[type="time"]:focus,
-  select:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 8px var(--primary);
-    outline: none;
-    background: var(--card);
+  input[type="text"]:focus, input[type="time"]:focus, select:focus {
+    border-color: var(--primary); box-shadow: 0 0 8px var(--primary); outline: none; background: var(--card);
   }
   button {
     background: var(--primary);
@@ -160,214 +73,93 @@
     cursor: pointer;
     user-select: none;
     box-shadow: 0 4px 14px rgba(14, 165, 233, 0.6);
-    transition: background 0.3s ease, transform 0.15s ease, box-shadow 0.3s ease;
+    transition: background 0.3s, transform 0.15s, box-shadow 0.3s;
     min-width: 0;
   }
-  button:hover,
-  button:focus {
-    background: var(--secondary);
-    transform: translateY(-3px);
-    box-shadow: 0 8px 26px rgba(14, 165, 233, 0.85);
-    outline: none;
+  button:hover, button:focus {
+    background: var(--secondary); transform: translateY(-3px); box-shadow: 0 8px 26px rgba(14, 165, 233, 0.85); outline: none;
   }
-  button:active {
-    transform: translateY(0);
-  }
-  ul {
-    list-style: none;
-    padding: 0;
-    margin-top: 8px;
-    max-height: 320px;
-    overflow-y: auto;
-    user-select: text;
-  }
+  button:active { transform: translateY(0); }
+  ul { list-style: none; padding: 0; margin-top: 8px; max-height: 320px; overflow-y: auto; }
   li {
-    padding: 12px 16px;
-    border-radius: 16px;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    color: var(--text);
-    margin-bottom: 12px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 1rem;
-    transition: background-color 0.2s ease;
+    padding: 12px 16px; border-radius: 16px; background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); margin-bottom: 12px; display: flex; align-items: center; font-size: 1rem; transition: background-color 0.2s;
   }
-  li:hover,
-  li:focus-within {
-    background-color: var(--hover-bg);
-    outline: none;
+  li.done { background: var(--done-bg); color: var(--done-txt); text-decoration: line-through;
+    font-style: italic; opacity: 0.7;}
+  li:hover, li:focus-within { background-color: var(--hover-bg); outline: none; cursor: pointer; }
+  .tickbox {
+    width: 22px; height: 22px; margin-right: 12px; border: 2px solid var(--primary);
+    border-radius: 6px; background: var(--card); display: flex; align-items: center; justify-content: center;
+    transition: border-color 0.2s, background 0.2s;
     cursor: pointer;
   }
+  .tickbox.checked {
+    background: var(--primary);
+    border-color: var(--secondary);
+  }
+  .tickbox svg {
+    display: none;
+    height: 16px; width: 16px; stroke: #fff; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; fill: none;
+  }
+  .tickbox.checked svg {
+    display: inline-block;
+  }
+  li .item-text { flex: 1; min-width: 0; }
   li button.delete-btn {
-    background: transparent;
-    border: none;
-    font-weight: 700;
-    color: var(--danger-red);
-    font-size: 20px;
-    cursor: pointer;
-    user-select: none;
-    padding: 0 8px;
-    transition: color 0.25s ease;
+    background: transparent; border: none; font-weight: 700; color: var(--danger-red); font-size: 20px; cursor: pointer;
+    user-select: none; padding: 0 8px; transition: color 0.25s;
   }
-  li button.delete-btn:hover,
-  li button.delete-btn:focus {
-    color: #dc2635;
-    outline: none;
-  }
+  li button.delete-btn:hover, li button.delete-btn:focus { color: #dc2635; outline: none; }
   #calendar-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 24px;
-    user-select: none;
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; user-select: none;
   }
   #calendar-header button {
-    width: 40px;
-    height: 40px;
-    font-size: 20px;
-    font-weight: 700;
-    border-radius: 50%;
-    border: none;
-    background: var(--primary);
-    color: white;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.75);
-    transition: background 0.3s ease;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 0;
+    width: 40px; height: 40px; font-size: 20px; font-weight: 700; border-radius: 50%; border: none; background: var(--primary);
+    color: white; cursor: pointer; box-shadow: 0 4px 12px rgba(14, 165, 233, 0.75); padding: 0;
+    display: flex; align-items: center; justify-content: center;
   }
-  #calendar-header button:hover,
-  #calendar-header button:focus {
-    background: var(--secondary);
-    outline: none;
-  }
+  #calendar-header button:hover, #calendar-header button:focus { background: var(--secondary);}
   #currentMonthYear {
-    font-weight: 800;
-    font-size: 1.3rem;
-    color: var(--secondary);
-    letter-spacing: 0.05em;
-    user-select: none;
+    font-weight: 800; font-size: 1.3rem; color: var(--secondary); letter-spacing: 0.05em; user-select: none;
   }
   #calendar {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    grid-gap: 12px;
-    background: var(--card);
-    border-radius: 24px;
-    padding: 16px;
-    margin-bottom: 32px;
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
-    user-select: none;
+    display: grid; grid-template-columns: repeat(7, 1fr); grid-gap: 12px; background: var(--card);
+    border-radius: 24px; padding: 16px; margin-bottom: 32px; box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12); user-select: none;
   }
-  #calendar .day,
-  #calendar .day-header {
-    padding: 14px 0;
-    text-align: center;
-    border-radius: 14px;
-    flex-direction: column;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    letter-spacing: 0.01em;
-    font-weight: 600;
-    transition: background-color 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
+  #calendar .day, #calendar .day-header {
+    padding: 14px 0; text-align: center; border-radius: 14px; flex-direction: column;
+    display: flex; justify-content: center; align-items: center; letter-spacing: 0.01em; font-weight: 600;
+    transition: background-color 0.3s, box-shadow 0.3s, color 0.3s;
   }
   #calendar .day-header {
-    color: var(--primary);
-    font-weight: 700;
-    font-size: 0.95rem;
+    color: var(--primary); font-weight: 700; font-size: 0.95rem;
   }
   #calendar .day {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    min-height: 58px;
-    cursor: pointer;
-    font-size: 1.05rem;
-    color: var(--text);
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    background: var(--bg); border: 1px solid var(--border); min-height: 58px; cursor: pointer; font-size: 1.05rem;
+    color: var(--text); box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
   }
-  #calendar .day:hover,
-  #calendar .day:focus-visible {
-    background: var(--primary);
-    color: white;
-    box-shadow: 0 6px 24px rgba(14, 165, 233, 0.65);
-    outline: none;
-  }
+  #calendar .day:hover, #calendar .day:focus-visible { background: var(--primary); color: white; }
   #calendar .selected {
-    background: var(--selected-blue);
-    color: white;
-    box-shadow: 0 8px 28px rgba(10, 99, 183, 0.9);
-    font-weight: 700;
+    background: var(--selected-blue); color: white; box-shadow: 0 8px 28px rgba(10, 99, 183, 0.9); font-weight: 700;
   }
-  #calendar .dot-container {
-    display: flex;
-    justify-content: center;
-    gap: 6px;
-    margin-top: 8px;
-  }
-  #calendar .dot {
-    width: 10px;
-    height: 10px;
-    background-color: var(--dot-light-blue);
-    border-radius: 50%;
-    box-shadow: 0 2px 6px rgba(126, 200, 255, 0.8);
-  }
-  #calendar .count {
-    color: var(--primary);
-    font-weight: 700;
-    font-size: 0.9rem;
-    margin-top: 6px;
-    user-select: none;
-  }
+  #calendar .dot-container { display: flex; justify-content: center; gap: 6px; margin-top: 8px; }
+  #calendar .dot { width: 10px; height: 10px; background-color: var(--dot-light-blue); border-radius: 50%; }
+  #calendar .count { color: var(--primary); font-weight: 700; font-size: 0.9rem; margin-top: 6px; user-select: none; }
   @media (max-width: 600px) {
-    #calendar {
-      grid-gap: 8px;
-      padding: 12px;
-    }
-    #calendar .day,
-    #calendar .day-header {
-      padding: 10px 0;
-      font-size: 0.95rem;
-    }
-    #calendar .dot {
-      width: 8px;
-      height: 8px;
-    }
-    #calendar .count {
-      font-size: 0.8rem;
-    }
-    .card {
-      padding: 12px 16px;
-      border-radius: 14px;
-    }
-    .row input[type="text"],
-    .row input[type="time"] {
-      padding: 10px;
-      font-size: 0.9rem;
-    }
-    .row button {
-      font-size: 0.9rem;
-      height: 40px;
-      width: 40px;
-      padding: 0;
-    }
-    #calendar-header button {
-      width: 32px;
-      height: 32px;
-      font-size: 18px;
-    }
+    #calendar { grid-gap: 8px; padding: 12px;}
+    #calendar .day, #calendar .day-header { padding: 10px 0; font-size: 0.95rem; }
+    #calendar .dot { width: 8px; height: 8px; }
+    #calendar .count { font-size: 0.8rem;}
+    .card { padding: 12px 16px; border-radius: 14px;}
+    .row input[type="text"], .row input[type="time"] { padding: 10px; font-size: 0.9rem;}
+    .row button { font-size: 0.9rem; height: 40px; width: 40px; padding: 0;}
+    #calendar-header button { width: 32px; height: 32px; font-size: 18px;}
   }
 </style>
-
 <body>
 <header>Family Board</header>
-
 <button id="darkModeToggle" aria-label="Sötét mód kapcsoló" title="Sötét mód váltó">Dark Mode</button>
-
 <div id="app" class="center">
   <div id="calendar-header">
     <button id="prevMonth" aria-label="Előző hónap" title="Előző hónap">&lt;</button>
@@ -396,333 +188,337 @@
     <ul id="shoppingList" tabindex="0"></ul>
   </div>
 </div>
-
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
-  import {
-    getAuth,
-    onAuthStateChanged,
-    signInAnonymously,
-    setPersistence,
-    browserLocalPersistence
-  } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
-  import {
-    getFirestore,
-    enableIndexedDbPersistence,
-    collection,
-    addDoc,
-    query,
-    orderBy,
-    onSnapshot,
-    deleteDoc,
-    doc,
-    getDocs
-  } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+import {
+  getAuth, onAuthStateChanged, signInAnonymously, setPersistence, browserLocalPersistence
+} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+import {
+  getFirestore, enableIndexedDbPersistence, collection, addDoc, updateDoc,
+  query, orderBy, onSnapshot, deleteDoc, doc, getDocs
+} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
-  document.addEventListener("DOMContentLoaded", () => {
-    const firebaseConfig = {
-      apiKey: "AIzaSyAeoxtOe5Cleasm3KdeSHP9WDR3PkU-N1I",
-      authDomain: "mosas-nyilvantartas.firebaseapp.com",
-      projectId: "mosas-nyilvantartas",
-      storageBucket: "mosas-nyilvantartas.firebasestorage.app",
-      messagingSenderId: "38259241645",
-      appId: "1:38259241645:web:26070b1d0686def9f00c24"
-    };
-    initializeApp(firebaseConfig);
-    const auth = getAuth();
-    setPersistence(auth, browserLocalPersistence);
-    const db = getFirestore();
-    enableIndexedDbPersistence(db).catch(() => {});
+document.addEventListener("DOMContentLoaded", () => {
+  const firebaseConfig = {
+    apiKey: "AIzaSyAeoxtOe5Cleasm3KdeSHP9WDR3PkU-N1I",
+    authDomain: "mosas-nyilvantartas.firebaseapp.com",
+    projectId: "mosas-nyilvantartas",
+    storageBucket: "mosas-nyilvantartas.firebasestorage.app",
+    messagingSenderId: "38259241645",
+    appId: "1:38259241645:web:26070b1d0686def9f00c24"
+  };
+  initializeApp(firebaseConfig);
+  const auth = getAuth();
+  setPersistence(auth, browserLocalPersistence);
+  const db = getFirestore();
+  enableIndexedDbPersistence(db).catch(() => {});
 
-    const householdId = "default";
+  const householdId = "default";
+  const calendarElem = document.getElementById("calendar");
+  const currentMonthYearSpan = document.getElementById("currentMonthYear");
+  const prevMonthBtn = document.getElementById("prevMonth");
+  const nextMonthBtn = document.getElementById("nextMonth");
+  const taskInput = document.getElementById("taskInput");
+  const taskTimeFrom = document.getElementById("taskTimeFrom");
+  const taskTimeTo = document.getElementById("taskTimeTo");
+  const addTask = document.getElementById("addTask");
+  const taskList = document.getElementById("taskList");
+  const shoppingInput = document.getElementById("shoppingInput");
+  const addShopping = document.getElementById("addShopping");
+  const shoppingList = document.getElementById("shoppingList");
+  const toggleBtn = document.getElementById("darkModeToggle");
+  const rootElem = document.documentElement;
 
-    const calendarElem = document.getElementById("calendar");
-    const currentMonthYearSpan = document.getElementById("currentMonthYear");
-    const prevMonthBtn = document.getElementById("prevMonth");
-    const nextMonthBtn = document.getElementById("nextMonth");
-    const taskInput = document.getElementById("taskInput");
-    const taskTimeFrom = document.getElementById("taskTimeFrom");
-    const taskTimeTo = document.getElementById("taskTimeTo");
-    const addTask = document.getElementById("addTask");
-    const taskList = document.getElementById("taskList");
-    const shoppingInput = document.getElementById("shoppingInput");
-    const addShopping = document.getElementById("addShopping");
-    const shoppingList = document.getElementById("shoppingList");
-    const toggleBtn = document.getElementById("darkModeToggle");
-    const rootElem = document.documentElement;
+  let selectedDate = new Date();
+  let selectedYear = selectedDate.getFullYear();
+  let selectedMonth = selectedDate.getMonth();
+  let monthItemsCount = new Map();
 
-    let selectedDate = new Date();
-    let selectedYear = selectedDate.getFullYear();
-    let selectedMonth = selectedDate.getMonth();
-    let monthItemsCount = new Map();
-
-    function formatDate(date) {
-      const y = date.getFullYear();
-      const m = String(date.getMonth() + 1).padStart(2, "0");
-      const d = String(date.getDate()).padStart(2, "0");
-      return `${y}-${m}-${d}`;
-    }
-
-    function updateCurrentMonthYear(year, month) {
-      const date = new Date(year, month, 1);
-      const str = date.toLocaleDateString("hu-HU", { year: "numeric", month: "long" });
-      currentMonthYearSpan.textContent = str;
-    }
-
-    async function loadMonthItemsCount(year, month) {
-      monthItemsCount.clear();
-      const tasksRef = collection(db, `households/${householdId}/tasks`);
-      const shoppingRef = collection(db, `households/${householdId}/shopping`);
-      const monthStr = `${year}-${String(month + 1).padStart(2, "0")}`;
-
-      await Promise.all([
-        getDocs(tasksRef).then(snapshot => {
-          snapshot.forEach(doc => {
-            const data = doc.data();
-            if (data.date && data.date.startsWith(monthStr)) {
-              monthItemsCount.set(data.date, (monthItemsCount.get(data.date) || 0) + 1);
-            }
-          });
-        }),
-        getDocs(shoppingRef).then(snapshot => {
-          snapshot.forEach(doc => {
-            const data = doc.data();
-            if (data.date && data.date.startsWith(monthStr)) {
-              monthItemsCount.set(data.date, (monthItemsCount.get(data.date) || 0) + 1);
-            }
-          });
-        })
-      ]);
-    }
-
-    async function createCalendar(year, month) {
-      await loadMonthItemsCount(year, month);
-      calendarElem.innerHTML = "";
-      const daysOfWeek = ["H", "K", "Sze", "Cs", "P", "Szo", "V"];
-      daysOfWeek.forEach(day => {
-        const header = document.createElement("div");
-        header.textContent = day;
-        header.classList.add("day-header");
-        calendarElem.appendChild(header);
-      });
-
-      const firstDay = new Date(year, month, 1);
-      const lastDay = new Date(year, month + 1, 0);
-      const startDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
-      const daysInMonth = lastDay.getDate();
-
-      for (let i = 0; i < startDay; i++) {
-        const emptyCell = document.createElement("div");
-        emptyCell.classList.add("day");
-        calendarElem.appendChild(emptyCell);
-      }
-
-      for (let day = 1; day <= daysInMonth; day++) {
-        const dayCell = document.createElement("div");
-        dayCell.classList.add("day");
-        dayCell.textContent = day;
-
-        const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-
-        if (monthItemsCount.has(dateStr)) {
-          const count = monthItemsCount.get(dateStr);
-          const dotContainer = document.createElement("div");
-          dotContainer.className = "dot-container";
-
-          const nDots = Math.min(count, 3);
-          for (let i = 0; i < nDots; i++) {
-            const dot = document.createElement("span");
-            dot.className = "dot";
-            dotContainer.appendChild(dot);
-          }
-          dayCell.appendChild(dotContainer);
-
-          if (count > 3) {
-            const countSpan = document.createElement("div");
-            countSpan.className = "count";
-            countSpan.textContent = count;
-            dayCell.appendChild(countSpan);
-          }
-        }
-
-        if (year === selectedYear && month === selectedMonth && day === selectedDate.getDate()) {
-          dayCell.classList.add("selected");
-        }
-
-        dayCell.addEventListener("click", () => {
-          selectedDate = new Date(year, month, day);
-          selectedYear = year;
-          selectedMonth = month;
-          refreshCalendar();
-        });
-
-        calendarElem.appendChild(dayCell);
-      }
-    }
-
-    async function refreshCalendar() {
-      updateCurrentMonthYear(selectedYear, selectedMonth);
-      await createCalendar(selectedYear, selectedMonth);
-      loadTasks();
-      loadShopping();
-    }
-
-    prevMonthBtn.addEventListener("click", () => {
-      selectedMonth--;
-      if (selectedMonth < 0) {
-        selectedMonth = 11;
-        selectedYear--;
-      }
-      selectedDate = new Date(selectedYear, selectedMonth, 1);
-      refreshCalendar();
-    });
-
-    nextMonthBtn.addEventListener("click", () => {
-      selectedMonth++;
-      if (selectedMonth > 11) {
-        selectedMonth = 0;
-        selectedYear++;
-      }
-      selectedDate = new Date(selectedYear, selectedMonth, 1);
-      refreshCalendar();
-    });
-
-    if (localStorage.getItem("theme")) {
-      rootElem.setAttribute("data-theme", localStorage.getItem("theme"));
-    }
-
-    toggleBtn.addEventListener("click", () => {
-      const currentTheme = rootElem.getAttribute("data-theme");
-      if (currentTheme === "dark") {
-        rootElem.removeAttribute("data-theme");
-        localStorage.setItem("theme", "light");
-      } else {
-        rootElem.setAttribute("data-theme", "dark");
-        localStorage.setItem("theme", "dark");
-      }
-    });
-
-    let unsubscribeTasks = null;
-    function loadTasks() {
-      if (unsubscribeTasks) unsubscribeTasks();
-      const q = query(collection(db, `households/${householdId}/tasks`), orderBy("createdAt", "desc"));
-      unsubscribeTasks = onSnapshot(q, (snapshot) => {
-        const dateStr = formatDate(selectedDate);
-        const tasks = [];
-        snapshot.forEach((doc) => {
-          const data = doc.data();
-          if (data.date === dateStr) {
-            tasks.push({ ...data, docId: doc.id });
-          }
-        });
-        renderTasks(tasks);
-      });
-    }
-    function renderTasks(tasks) {
-      taskList.innerHTML = "";
-      tasks.forEach((task) => {
-        const li = document.createElement("li");
-        const timePart = task.timeFrom && task.timeTo ? `[${task.timeFrom} - ${task.timeTo}] ` : "";
-        li.textContent = timePart + task.text;
-        const delBtn = document.createElement("button");
-        delBtn.className = "delete-btn";
-        delBtn.title = "Törlés";
-        delBtn.textContent = "✖";
-        delBtn.addEventListener("click", async () => {
-          const pin = prompt("Add meg a PIN kódot a törléshez:");
-          if (pin !== "2025") {
-            alert("Hibás PIN kód!");
-            return;
-          }
-          await deleteDoc(doc(db, `households/${householdId}/tasks`, task.docId));
-        });
-        li.appendChild(delBtn);
-        taskList.appendChild(li);
-      });
-    }
-
-    addTask.addEventListener("click", async () => {
-      const text = taskInput.value.trim();
-      const timeFrom = taskTimeFrom.value.trim();
-      const timeTo = taskTimeTo.value.trim();
-      if (!text) return alert("Adj meg egy teendőt!");
-      const dateStr = formatDate(selectedDate);
-      await addDoc(collection(db, `households/${householdId}/tasks`), {
-        text,
-        timeFrom: timeFrom || "",
-        timeTo: timeTo || "",
-        date: dateStr,
-        createdAt: Date.now(),
-      });
-      taskInput.value = "";
-      taskTimeFrom.value = "";
-      taskTimeTo.value = "";
-    });
-
-    let unsubscribeShopping = null;
-    function loadShopping() {
-      if (unsubscribeShopping) unsubscribeShopping();
-      const q = query(collection(db, `households/${householdId}/shopping`), orderBy("createdAt", "desc"));
-      unsubscribeShopping = onSnapshot(q, (snapshot) => {
-        const items = [];
-        snapshot.forEach((doc) => {
-          items.push({ ...doc.data(), docId: doc.id });
-        });
-        renderShopping(items);
-      });
-    }
-    function renderShopping(items) {
-      shoppingList.innerHTML = "";
-      items.forEach((item) => {
-        const li = document.createElement("li");
-        li.textContent = item.text;
-        const delBtn = document.createElement("button");
-        delBtn.className = "delete-btn";
-        delBtn.title = "Törlés";
-        delBtn.textContent = "✖";
-        delBtn.addEventListener("click", async () => {
-          const pin = prompt("Add meg a PIN kódot a törléshez:");
-          if (pin !== "2025") {
-            alert("Hibás PIN kód!");
-            return;
-          }
-          await deleteDoc(doc(db, `households/${householdId}/shopping`, item.docId));
-        });
-        li.appendChild(delBtn);
-        shoppingList.appendChild(li);
-      });
-    }
-    addShopping.addEventListener("click", async () => {
-      const text = shoppingInput.value.trim();
-      if (!text) return alert("Adj meg egy bevásárló tételt!");
-      await addDoc(collection(db, `households/${householdId}/shopping`), {
-        text,
-        createdAt: Date.now(),
-      });
-      shoppingInput.value = "";
-    });
-    async function init() {
-      await signInAnonymously(auth);
-      refreshCalendar();
-      loadTasks();
-      loadShopping();
-    }
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        init();
-      } else {
-        signInAnonymously(auth);
-      }
-    });
-  });
-</script>
-
-<script>
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./sw.js?v=11d-final");
+  function formatDate(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
   }
+
+  function updateCurrentMonthYear(year, month) {
+    const date = new Date(year, month, 1);
+    const str = date.toLocaleDateString("hu-HU", { year: "numeric", month: "long" });
+    currentMonthYearSpan.textContent = str;
+  }
+
+  async function loadMonthItemsCount(year, month) {
+    monthItemsCount.clear();
+    const tasksRef = collection(db, `households/${householdId}/tasks`);
+    const shoppingRef = collection(db, `households/${householdId}/shopping`);
+    const monthStr = `${year}-${String(month + 1).padStart(2, "0")}`;
+
+    await Promise.all([
+      getDocs(tasksRef).then(snapshot => {
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          if (data.date && data.date.startsWith(monthStr)) {
+            monthItemsCount.set(data.date, (monthItemsCount.get(data.date) || 0) + 1);
+          }
+        });
+      }),
+      getDocs(shoppingRef).then(snapshot => {
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          if (data.date && data.date.startsWith(monthStr)) {
+            monthItemsCount.set(data.date, (monthItemsCount.get(data.date) || 0) + 1);
+          }
+        });
+      })
+    ]);
+  }
+
+  async function createCalendar(year, month) {
+    await loadMonthItemsCount(year, month);
+    calendarElem.innerHTML = "";
+    const daysOfWeek = ["H", "K", "Sze", "Cs", "P", "Szo", "V"];
+    daysOfWeek.forEach(day => {
+      const header = document.createElement("div");
+      header.textContent = day;
+      header.classList.add("day-header");
+      calendarElem.appendChild(header);
+    });
+
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
+    const daysInMonth = lastDay.getDate();
+
+    for (let i = 0; i < startDay; i++) {
+      const emptyCell = document.createElement("div");
+      emptyCell.classList.add("day");
+      calendarElem.appendChild(emptyCell);
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dayCell = document.createElement("div");
+      dayCell.classList.add("day");
+      dayCell.textContent = day;
+
+      const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+
+      if (monthItemsCount.has(dateStr)) {
+        const count = monthItemsCount.get(dateStr);
+        const dotContainer = document.createElement("div");
+        dotContainer.className = "dot-container";
+        const nDots = Math.min(count, 3);
+        for (let i = 0; i < nDots; i++) {
+          const dot = document.createElement("span");
+          dot.className = "dot";
+          dotContainer.appendChild(dot);
+        }
+        dayCell.appendChild(dotContainer);
+
+        if (count > 3) {
+          const countSpan = document.createElement("div");
+          countSpan.className = "count";
+          countSpan.textContent = count;
+          dayCell.appendChild(countSpan);
+        }
+      }
+
+      if (year === selectedYear && month === selectedMonth && day === selectedDate.getDate()) {
+        dayCell.classList.add("selected");
+      }
+
+      dayCell.addEventListener("click", () => {
+        selectedDate = new Date(year, month, day);
+        selectedYear = year;
+        selectedMonth = month;
+        refreshCalendar();
+      });
+
+      calendarElem.appendChild(dayCell);
+    }
+  }
+
+  async function refreshCalendar() {
+    updateCurrentMonthYear(selectedYear, selectedMonth);
+    await createCalendar(selectedYear, selectedMonth);
+    loadTasks();
+    loadShopping();
+  }
+
+  prevMonthBtn.addEventListener("click", () => {
+    selectedMonth--;
+    if (selectedMonth < 0) {
+      selectedMonth = 11;
+      selectedYear--;
+    }
+    selectedDate = new Date(selectedYear, selectedMonth, 1);
+    refreshCalendar();
+  });
+
+  nextMonthBtn.addEventListener("click", () => {
+    selectedMonth++;
+    if (selectedMonth > 11) {
+      selectedMonth = 0;
+      selectedYear++;
+    }
+    selectedDate = new Date(selectedYear, selectedMonth, 1);
+    refreshCalendar();
+  });
+
+  if (localStorage.getItem("theme")) {
+    rootElem.setAttribute("data-theme", localStorage.getItem("theme"));
+  }
+
+  toggleBtn.addEventListener("click", () => {
+    const currentTheme = rootElem.getAttribute("data-theme");
+    if (currentTheme === "dark") {
+      rootElem.removeAttribute("data-theme");
+      localStorage.setItem("theme", "light");
+    } else {
+      rootElem.setAttribute("data-theme", "dark");
+      localStorage.setItem("theme", "dark");
+    }
+  });
+
+  // --- Feladatok és lista elemek pipával/kihúzással ---
+  let unsubscribeTasks = null, unsubscribeShopping = null;
+
+  function taskTickbox(checked) {
+    return `<span class="tickbox${checked ? " checked" : ""}">
+      <svg viewBox="0 0 14 12"><polyline points="1 7 5.5 11 13 1"></polyline></svg>
+    </span>`;
+  }
+
+  function renderTasks(tasks) {
+    taskList.innerHTML = "";
+    tasks.forEach((task) => {
+      const li = document.createElement("li");
+      if (task.done) li.classList.add("done");
+      li.innerHTML =
+        taskTickbox(task.done) +
+        `<span class="item-text">${(task.timeFrom && task.timeTo ? `[${task.timeFrom} - ${task.timeTo}] ` : "") + task.text}</span>`;
+      const delBtn = document.createElement("button");
+      delBtn.className = "delete-btn";
+      delBtn.title = "Törlés";
+      delBtn.textContent = "✖";
+      delBtn.addEventListener("click", async () => {
+        const pin = prompt("Add meg a PIN kódot a törléshez:");
+        if (pin !== "2025") return alert("Hibás PIN kód!");
+        await deleteDoc(doc(db, `households/${householdId}/tasks`, task.docId));
+      });
+      li.appendChild(delBtn);
+      // Pipa esemény
+      li.querySelector(".tickbox").addEventListener("click", async () => {
+        await updateDoc(doc(db, `households/${householdId}/tasks`, task.docId), {
+          done: !task.done,
+        });
+      });
+      taskList.appendChild(li);
+    });
+  }
+
+  function renderShopping(items) {
+    shoppingList.innerHTML = "";
+    items.forEach((item) => {
+      const li = document.createElement("li");
+      if (item.done) li.classList.add("done");
+      li.innerHTML =
+        taskTickbox(item.done) +
+        `<span class="item-text">${item.text}</span>`;
+      const delBtn = document.createElement("button");
+      delBtn.className = "delete-btn";
+      delBtn.title = "Törlés";
+      delBtn.textContent = "✖";
+      delBtn.addEventListener("click", async () => {
+        const pin = prompt("Add meg a PIN kódot a törléshez:");
+        if (pin !== "2025") return alert("Hibás PIN kód!");
+        await deleteDoc(doc(db, `households/${householdId}/shopping`, item.docId));
+      });
+      li.appendChild(delBtn);
+      // Pipa esemény
+      li.querySelector(".tickbox").addEventListener("click", async () => {
+        await updateDoc(doc(db, `households/${householdId}/shopping`, item.docId), {
+          done: !item.done,
+        });
+      });
+      shoppingList.appendChild(li);
+    });
+  }
+
+  function loadTasks() {
+    if (unsubscribeTasks) unsubscribeTasks();
+    const q = query(collection(db, `households/${householdId}/tasks`), orderBy("createdAt", "desc"));
+    unsubscribeTasks = onSnapshot(q, (snapshot) => {
+      const dateStr = formatDate(selectedDate);
+      const tasks = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.date === dateStr) {
+          tasks.push({ ...data, docId: doc.id });
+        }
+      });
+      renderTasks(tasks);
+    });
+  }
+  addTask.addEventListener("click", async () => {
+    const text = taskInput.value.trim();
+    const timeFrom = taskTimeFrom.value.trim();
+    const timeTo = taskTimeTo.value.trim();
+    if (!text) return alert("Adj meg egy teendőt!");
+    const dateStr = formatDate(selectedDate);
+    await addDoc(collection(db, `households/${householdId}/tasks`), {
+      text,
+      timeFrom: timeFrom || "",
+      timeTo: timeTo || "",
+      date: dateStr,
+      createdAt: Date.now(),
+      done: false,
+    });
+    taskInput.value = "";
+    taskTimeFrom.value = "";
+    taskTimeTo.value = "";
+  });
+
+  function loadShopping() {
+    if (unsubscribeShopping) unsubscribeShopping();
+    const q = query(collection(db, `households/${householdId}/shopping`), orderBy("createdAt", "desc"));
+    unsubscribeShopping = onSnapshot(q, (snapshot) => {
+      const items = [];
+      snapshot.forEach((doc) => {
+        items.push({ ...doc.data(), docId: doc.id });
+      });
+      renderShopping(items);
+    });
+  }
+  addShopping.addEventListener("click", async () => {
+    const text = shoppingInput.value.trim();
+    if (!text) return alert("Adj meg egy bevásárló tételt!");
+    await addDoc(collection(db, `households/${householdId}/shopping`), {
+      text,
+      createdAt: Date.now(),
+      done: false,
+    });
+    shoppingInput.value = "";
+  });
+
+  async function init() {
+    await signInAnonymously(auth);
+    refreshCalendar();
+    loadTasks();
+    loadShopping();
+  }
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      init();
+    } else {
+      signInAnonymously(auth);
+    }
+  });
+});
 </script>
-
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("./sw.js?v=11d-final");
+}
+</script>
 </body>
-
 </html>
