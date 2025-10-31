@@ -2,12 +2,12 @@
 <html lang="hu">
 
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#0ea5e9">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#0ea5e9"/>
 <title>FamilyBoard v11d-final</title>
-<link rel="manifest" href="./manifest.webmanifest?v=11d-final">
+<link rel="manifest" href="./manifest.webmanifest?v=11d-final"/>
 <style>
   :root {
     --primary: #0ea5e9;
@@ -410,6 +410,9 @@
 </style>
 
 </head>
+
+
+
 <body>
 
 <header>Family Board
@@ -453,8 +456,26 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, signInAnonymously, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
-import { getFirestore, enableIndexedDbPersistence, collection, addDoc, updateDoc, query, orderBy, onSnapshot, deleteDoc, doc, getDocs } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+import {
+  getAuth,
+  onAuthStateChanged,
+  signInAnonymously,
+  setPersistence,
+  browserLocalPersistence
+} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+import {
+  getFirestore,
+  enableIndexedDbPersistence,
+  collection,
+  addDoc,
+  updateDoc,
+  query,
+  orderBy,
+  onSnapshot,
+  deleteDoc,
+  doc,
+  getDocs
+} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   const firebaseConfig = {
@@ -502,27 +523,16 @@ document.addEventListener("DOMContentLoaded", () => {
   async function loadMonthItemsCount(year, month) {
     monthItemsCount.clear();
     const tasksRef = collection(db, `households/${householdId}/tasks`);
-    const shoppingRef = collection(db, `households/${householdId}/shopping`);
     const monthStr = `${year}-${String(month + 1).padStart(2, "0")}`;
 
-    await Promise.all([
-      getDocs(tasksRef).then(snapshot => {
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          if (data.date && data.date.startsWith(monthStr) && !data.done) {
-            monthItemsCount.set(data.date, (monthItemsCount.get(data.date) || 0) + 1);
-          }
-        });
-      }),
-      getDocs(shoppingRef).then(snapshot => {
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          if (data.date && data.date.startsWith(monthStr) && !data.done) {
-            monthItemsCount.set(data.date, (monthItemsCount.get(data.date) || 0) + 1);
-          }
-        });
-      }),
-    ]);
+    await getDocs(tasksRef).then(snapshot => {
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.date && data.date.startsWith(monthStr) && !data.done) {
+          monthItemsCount.set(data.date, (monthItemsCount.get(data.date) || 0) + 1);
+        }
+      });
+    });
   }
 
   async function createCalendar(year, month) {
@@ -599,7 +609,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function updateCurrentMonthYear(year, month) {
     const date = new Date(year, month, 1);
-    currentMonthYearSpan.textContent = date.toLocaleDateString("hu-HU", { year: "numeric", month: "long" })
+    currentMonthYearSpan.textContent = date.toLocaleDateString("hu-HU", { year: "numeric", month: "long" });
   }
 
   async function refreshCalendar() {
@@ -712,7 +722,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       });
       renderTasks(tasks);
-      refreshCalendar(); // Itt frissítjük a pöttyöket is
+      refreshCalendar(); // Refresh pöttyök, hogy friss legyen
     });
   }
 
@@ -725,7 +735,7 @@ document.addEventListener("DOMContentLoaded", () => {
         items.push({ ...doc.data(), docId: doc.id });
       });
       renderShopping(items);
-      refreshCalendar(); // Itt is frissítés
+      // No refreshCalendar itt, mert nem számoljuk be a bevásárló listát a pöttyökbe
     });
   }
 
@@ -773,6 +783,7 @@ document.addEventListener("DOMContentLoaded", () => {
       signInAnonymously(auth);
     }
   });
+
 });
 </script>
 
@@ -783,4 +794,5 @@ document.addEventListener("DOMContentLoaded", () => {
 </script>
 
 </body>
+
 </html>
