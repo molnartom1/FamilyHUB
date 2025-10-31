@@ -1,18 +1,413 @@
 <!DOCTYPE html>
 <html lang="hu">
+
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="theme-color" content="#0ea5e9"/>
 <title>FamilyBoard v11d-final</title>
 <link rel="manifest" href="./manifest.webmanifest?v=11d-final"/>
-<!-- ... CSS ugyanaz mint előzőleg ... -->
-<!-- kihagyva a helytakarékosság miatt; ugyanaz, mint az előző teljes verzióban -->
+<style>
+  :root {
+    --primary: #0ea5e9;
+    --secondary: #0284c7;
+    --bg: #f6f8fb;
+    --card: #ffffff;
+    --text: #222222;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --hover-bg: #d0e9ff;
+    --selected-blue: #0a63b7;
+    --dot-light-blue: #7ec8ff;
+    --danger-red: #e11d48;
+    --done-bg: #d2eaf3;
+    --done-txt: #b2b2b2;
+  }
+  [data-theme="dark"] {
+    --primary: #9cf;
+    --secondary: #66aaff;
+    --bg: #121212;
+    --card: #1e1e1e;
+    --text: #eee;
+    --muted: #aaa;
+    --border: #333;
+    --hover-bg: #254060;
+    --selected-blue: #2962ff;
+    --dot-light-blue: #5599ff;
+    --danger-red: #f87171;
+    --done-bg: #1a2932;
+    --done-txt: #666;
+  }
+  body {
+    margin: 0;
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  header {
+    position: relative;
+    background: linear-gradient(135deg, var(--secondary), var(--primary));
+    color: white;
+    padding: 16px 0;
+    text-align: center;
+    font-weight: 700;
+    font-size: 1.4rem;
+    border-radius: 0 0 24px 24px;
+    box-shadow: 0 4px 8px rgba(14, 165, 233, 0.4);
+    user-select: none;
+  }
+  /* Dark mode ikonos gomb */
+  #darkModeToggle {
+    position: absolute;
+    top: 12px;
+    right: 24px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+  }
+  #darkModeToggle svg {
+    display: block;
+    width: 28px;
+    height: 28px;
+    stroke: #374151; /* sötétszürke */
+    transition: stroke 0.3s ease;
+  }
+  [data-theme="dark"] #darkModeToggle svg {
+    stroke: #9ca3af; /* világos szürke */
+  }
+  #darkModeToggle:hover svg,
+  #darkModeToggle:focus svg {
+    stroke: #fbbf24; /* arany szín hoverkor */
+    outline: none;
+  }
+  .center {
+    max-width: 600px;
+    margin: 28px auto;
+    padding: 0 16px;
+  }
+  .card {
+    background: var(--card);
+    border-radius: 20px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.07);
+    padding: 20px 24px;
+    margin-bottom: 28px;
+    border: none;
+    transition: box-shadow 0.3s ease;
+  }
+  .card:hover {
+    box-shadow: 0 8px 26px rgba(0, 0, 0, 0.1);
+  }
+  h2 {
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--primary);
+    user-select: none;
+    letter-spacing: 0.04em;
+  }
+  .row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: nowrap;
+    align-items: center;
+  }
+  #taskInput,
+  #shoppingInput {
+    flex: 2 1 0px;
+    min-width: 0;
+  }
+  #taskTimeFrom,
+  #taskTimeTo {
+    flex: 1 1 0px;
+    min-width: 70px;
+  }
+  #addTask,
+  #addShopping {
+    flex: 0 0 48px;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+  }
+  input[type="text"],
+  input[type="time"],
+  select {
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 18px;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    background: var(--bg);
+    color: var(--text);
+    user-select: text;
+  }
+  input[type="text"]:focus,
+  input[type="time"]:focus,
+  select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 8px var(--primary);
+    outline: none;
+    background: var(--card);
+  }
+  button {
+    background: var(--primary);
+    border-radius: 20px;
+    padding: 0;
+    border: none;
+    color: white;
+    font-weight: 700;
+    font-size: 1.2rem;
+    cursor: pointer;
+    user-select: none;
+    box-shadow: 0 4px 14px rgba(14, 165, 233, 0.6);
+    transition: background 0.3s, transform 0.15s, box-shadow 0.3s;
+    min-width: 0;
+  }
+  button:hover,
+  button:focus {
+    background: var(--secondary);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 26px rgba(14, 165, 233, 0.85);
+    outline: none;
+  }
+  button:active {
+    transform: translateY(0);
+  }
+  ul {
+    list-style: none;
+    padding: 0;
+    margin-top: 8px;
+    max-height: 320px;
+    overflow-y: auto;
+    user-select: text;
+  }
+  li {
+    padding: 12px 16px;
+    border-radius: 16px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    font-size: 1rem;
+    transition: background-color 0.2s ease;
+  }
+  li.done {
+    background: var(--done-bg);
+    color: var(--done-txt);
+    text-decoration: line-through;
+    font-style: italic;
+    opacity: 0.7;
+  }
+  li:hover,
+  li:focus-within {
+    background-color: var(--hover-bg);
+    outline: none;
+    cursor: pointer;
+  }
+  .tickbox {
+    width: 22px;
+    height: 22px;
+    margin-right: 12px;
+    border: 2px solid var(--primary);
+    border-radius: 6px;
+    background: var(--card);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.2s, background 0.2s;
+    cursor: pointer;
+  }
+  .tickbox.checked {
+    background: var(--primary);
+    border-color: var(--secondary);
+  }
+  .tickbox svg {
+    display: none;
+    height: 16px;
+    width: 16px;
+    stroke: #fff;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+  }
+  .tickbox.checked svg {
+    display: inline-block;
+  }
+  li .item-text {
+    flex: 1;
+    min-width: 0;
+  }
+  li button.delete-btn {
+    background: transparent;
+    border: none;
+    font-weight: 700;
+    color: var(--danger-red);
+    font-size: 20px;
+    cursor: pointer;
+    user-select: none;
+    padding: 0 8px;
+    transition: color 0.25s;
+  }
+  li button.delete-btn:hover,
+  li button.delete-btn:focus {
+    color: #dc2635;
+    outline: none;
+  }
+  #calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    user-select: none;
+  }
+  #calendar-header button {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+    font-weight: 700;
+    border-radius: 50%;
+    border: none;
+    background: var(--primary);
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.75);
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.3s ease;
+  }
+  #calendar-header button:hover,
+  #calendar-header button:focus {
+    background: var(--secondary);
+    outline: none;
+  }
+  #currentMonthYear {
+    font-weight: 800;
+    font-size: 1.3rem;
+    color: var(--secondary);
+    letter-spacing: 0.05em;
+    user-select: none;
+  }
+  #calendar {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-gap: 12px;
+    background: var(--card);
+    border-radius: 24px;
+    padding: 16px;
+    margin-bottom: 32px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
+    user-select: none;
+  }
+  #calendar .day,
+  #calendar .day-header {
+    padding: 14px 0;
+    text-align: center;
+    border-radius: 14px;
+    flex-direction: column;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    letter-spacing: 0.01em;
+    font-weight: 600;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
+  }
+  #calendar .day-header {
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
+  #calendar .day {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    min-height: 58px;
+    cursor: pointer;
+    font-size: 1.05rem;
+    color: var(--text);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  }
+  #calendar .day:hover,
+  #calendar .day:focus-visible {
+    background: var(--primary);
+    color: white;
+    box-shadow: 0 6px 24px rgba(14, 165, 233, 0.65);
+    outline: none;
+  }
+  #calendar .selected {
+    background: var(--selected-blue);
+    color: white;
+    box-shadow: 0 8px 28px rgba(10, 99, 183, 0.9);
+    font-weight: 700;
+    position: relative;
+  }
+  #calendar .day.selected::after {
+    content: "☀️"; /* Nap ikon */
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    font-size: 18px;
+    color: #fbbf24;
+  }
+  [data-theme="dark"] #calendar .day.selected::after {
+    color: #facc15;
+  }
+  @media (max-width: 600px) {
+    #calendar {
+      grid-gap: 8px;
+      padding: 12px;
+    }
+    #calendar .day,
+    #calendar .day-header {
+      padding: 10px 0;
+      font-size: 0.95rem;
+    }
+    #calendar .dot {
+      width: 8px;
+      height: 8px;
+    }
+    #calendar .count {
+      font-size: 0.8rem;
+    }
+    .card {
+      padding: 12px 16px;
+      border-radius: 14px;
+    }
+    .row input[type="text"],
+    .row input[type="time"] {
+      padding: 10px;
+      font-size: 0.9rem;
+    }
+    .row button {
+      font-size: 0.9rem;
+      height: 40px;
+      width: 40px;
+      padding: 0;
+    }
+    #calendar-header button {
+      width: 32px;
+      height: 32px;
+      font-size: 18px;
+    }
+  }
+</style>
 </head>
 <body>
 <header>Family Board
   <button id="darkModeToggle" aria-label="Sötét mód kapcsoló" title="Sötét mód váltó">
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 0111.21 3a7 7 0 0010.79 9.79z"></path></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24" viewBox="0 0 24 24" class="feather feather-moon">
+      <path d="M21 12.79A9 9 0 0111.21 3a7 7 0 0010.79 9.79z"></path>
+    </svg>
   </button>
 </header>
 
@@ -48,11 +443,24 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
 import {
-  getAuth, onAuthStateChanged, signInAnonymously, setPersistence, browserLocalPersistence
+  getAuth,
+  onAuthStateChanged,
+  signInAnonymously,
+  setPersistence,
+  browserLocalPersistence
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
 import {
-  getFirestore, enableIndexedDbPersistence, collection, addDoc, updateDoc,
-  query, orderBy, onSnapshot, deleteDoc, doc, getDocs
+  getFirestore,
+  enableIndexedDbPersistence,
+  collection,
+  addDoc,
+  updateDoc,
+  query,
+  orderBy,
+  onSnapshot,
+  deleteDoc,
+  doc,
+  getDocs
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -98,27 +506,43 @@ document.addEventListener("DOMContentLoaded", () => {
     return `${y}-${m}-${d}`;
   }
 
+  function updateCurrentMonthYear(year, month) {
+    const date = new Date(year, month, 1);
+    const str = date.toLocaleDateString("hu-HU", { year: "numeric", month: "long" });
+    currentMonthYearSpan.textContent = str;
+  }
+
   async function loadMonthItemsCount(year, month) {
     monthItemsCount.clear();
     const tasksRef = collection(db, `households/${householdId}/tasks`);
+    const shoppingRef = collection(db, `households/${householdId}/shopping`);
     const monthStr = `${year}-${String(month + 1).padStart(2, "0")}`;
 
-    await getDocs(tasksRef).then(snapshot => {
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        if (data.date && data.date.startsWith(monthStr) && !data.done) {
-          monthItemsCount.set(data.date, (monthItemsCount.get(data.date) || 0) + 1);
-        }
-      });
-    });
+    await Promise.all([
+      getDocs(tasksRef).then(snapshot => {
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          if (data.date && data.date.startsWith(monthStr)) {
+            monthItemsCount.set(data.date, (monthItemsCount.get(data.date) || 0) + 1);
+          }
+        });
+      }),
+      getDocs(shoppingRef).then(snapshot => {
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          if (data.date && data.date.startsWith(monthStr)) {
+            monthItemsCount.set(data.date, (monthItemsCount.get(data.date) || 0) + 1);
+          }
+        });
+      })
+    ]);
   }
 
   async function createCalendar(year, month) {
     await loadMonthItemsCount(year, month);
     calendarElem.innerHTML = "";
-
     const daysOfWeek = ["H", "K", "Sze", "Cs", "P", "Szo", "V"];
-    daysOfWeek.forEach((day) => {
+    daysOfWeek.forEach(day => {
       const header = document.createElement("div");
       header.textContent = day;
       header.classList.add("day-header");
@@ -129,8 +553,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const lastDay = new Date(year, month + 1, 0);
     const startDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
     const daysInMonth = lastDay.getDate();
-
-    const today = new Date();
 
     for (let i = 0; i < startDay; i++) {
       const emptyCell = document.createElement("div");
@@ -169,35 +591,23 @@ document.addEventListener("DOMContentLoaded", () => {
       if (year === selectedYear && month === selectedMonth && day === selectedDate.getDate()) {
         dayCell.classList.add("selected");
       }
-      if (year === today.getFullYear() && month === today.getMonth() && day === today.getDate()) {
-        dayCell.classList.add("today");
-      }
 
       dayCell.addEventListener("click", () => {
         selectedDate = new Date(year, month, day);
         selectedYear = year;
         selectedMonth = month;
-        updateCurrentMonthYear(selectedYear, selectedMonth);
-        createCalendar(selectedYear, selectedMonth);
-        loadTasks();
+        refreshCalendar();
       });
 
       calendarElem.appendChild(dayCell);
     }
   }
 
-  function updateCurrentMonthYear(year, month) {
-    const date = new Date(year, month, 1);
-    currentMonthYearSpan.textContent = date.toLocaleDateString("hu-HU", { year: "numeric", month: "long" });
-  }
-
-  // ---------------------------
-  // TEENDŐK és NAPTÁR FRISSÍTÉS
-  // ---------------------------
-
-  function refreshCalendar() {
+  async function refreshCalendar() {
     updateCurrentMonthYear(selectedYear, selectedMonth);
-    createCalendar(selectedYear, selectedMonth);
+    await createCalendar(selectedYear, selectedMonth);
+    loadTasks();
+    loadShopping();
   }
 
   prevMonthBtn.addEventListener("click", () => {
@@ -208,7 +618,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     selectedDate = new Date(selectedYear, selectedMonth, 1);
     refreshCalendar();
-    loadTasks();
   });
 
   nextMonthBtn.addEventListener("click", () => {
@@ -219,9 +628,20 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     selectedDate = new Date(selectedYear, selectedMonth, 1);
     refreshCalendar();
-    loadTasks();
   });
 
+  toggleBtn.addEventListener("click", () => {
+    const currentTheme = rootElem.getAttribute("data-theme");
+    if (currentTheme === "dark") {
+      rootElem.removeAttribute("data-theme");
+      localStorage.setItem("theme", "light");
+    } else {
+      rootElem.setAttribute("data-theme", "dark");
+      localStorage.setItem("theme", "dark");
+    }
+  });
+
+  // Checkbox és lista kihúzás
   let unsubscribeTasks = null, unsubscribeShopping = null;
 
   function taskTickbox(checked) {
@@ -234,12 +654,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderTasks(tasks) {
     taskList.innerHTML = "";
-    tasks.forEach((task) => {
+    tasks.forEach(task => {
       const li = document.createElement("li");
       if (task.done) li.classList.add("done");
-      li.innerHTML =
-        taskTickbox(task.done) +
-        `<span class="item-text">${(task.timeFrom && task.timeTo ? `[${task.timeFrom} - ${task.timeTo}] ` : "") + task.text}</span>`;
+      li.innerHTML = taskTickbox(task.done) + `<span class="item-text">${(task.timeFrom && task.timeTo ? `[${task.timeFrom} - ${task.timeTo}] ` : "") + task.text}</span>`;
       const delBtn = document.createElement("button");
       delBtn.className = "delete-btn";
       delBtn.title = "Törlés";
@@ -251,14 +669,12 @@ document.addEventListener("DOMContentLoaded", () => {
           return;
         }
         await deleteDoc(doc(db, `households/${householdId}/tasks`, task.docId));
-        refreshCalendar();
       });
       li.appendChild(delBtn);
       li.querySelector(".tickbox").addEventListener("click", async () => {
         await updateDoc(doc(db, `households/${householdId}/tasks`, task.docId), {
           done: !task.done,
         });
-        refreshCalendar();
       });
       taskList.appendChild(li);
     });
@@ -266,12 +682,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderShopping(items) {
     shoppingList.innerHTML = "";
-    items.forEach((item) => {
+    items.forEach(item => {
       const li = document.createElement("li");
       if (item.done) li.classList.add("done");
-      li.innerHTML =
-        taskTickbox(item.done) +
-        `<span class="item-text">${item.text}</span>`;
+      li.innerHTML = taskTickbox(item.done) + `<span class="item-text">${item.text}</span>`;
       const delBtn = document.createElement("button");
       delBtn.className = "delete-btn";
       delBtn.title = "Törlés";
@@ -297,28 +711,16 @@ document.addEventListener("DOMContentLoaded", () => {
   function loadTasks() {
     if (unsubscribeTasks) unsubscribeTasks();
     const q = query(collection(db, `households/${householdId}/tasks`), orderBy("createdAt", "desc"));
-    unsubscribeTasks = onSnapshot(q, (snapshot) => {
+    unsubscribeTasks = onSnapshot(q, snapshot => {
       const dateStr = formatDate(selectedDate);
       const tasks = [];
-      snapshot.forEach((doc) => {
+      snapshot.forEach(doc => {
         const data = doc.data();
         if (data.date === dateStr) {
           tasks.push({ ...data, docId: doc.id });
         }
       });
       renderTasks(tasks);
-    });
-  }
-
-  function loadShopping() {
-    if (unsubscribeShopping) unsubscribeShopping();
-    const q = query(collection(db, `households/${householdId}/shopping`), orderBy("createdAt", "desc"));
-    unsubscribeShopping = onSnapshot(q, (snapshot) => {
-      const items = [];
-      snapshot.forEach((doc) => {
-        items.push({ ...doc.data(), docId: doc.id });
-      });
-      renderShopping(items);
     });
   }
 
@@ -339,8 +741,19 @@ document.addEventListener("DOMContentLoaded", () => {
     taskInput.value = "";
     taskTimeFrom.value = "";
     taskTimeTo.value = "";
-    refreshCalendar();
   });
+
+  function loadShopping() {
+    if (unsubscribeShopping) unsubscribeShopping();
+    const q = query(collection(db, `households/${householdId}/shopping`), orderBy("createdAt", "desc"));
+    unsubscribeShopping = onSnapshot(q, snapshot => {
+      const items = [];
+      snapshot.forEach(doc => {
+        items.push({ ...doc.data(), docId: doc.id });
+      });
+      renderShopping(items);
+    });
+  }
 
   addShopping.addEventListener("click", async () => {
     const text = shoppingInput.value.trim();
@@ -355,32 +768,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function init() {
     await signInAnonymously(auth);
-    updateCurrentMonthYear(selectedYear, selectedMonth);
-    await createCalendar(selectedYear, selectedMonth);
+    refreshCalendar();
     loadTasks();
     loadShopping();
   }
 
-  onAuthStateChanged(auth, (user) => {
+  onAuthStateChanged(auth, user => {
     if (user) {
       init();
     } else {
       signInAnonymously(auth);
-    }
-  });
-
-  // DARK MODE LOGIKA
-  if (localStorage.getItem("theme")) {
-    rootElem.setAttribute("data-theme", localStorage.getItem("theme"));
-  }
-  toggleBtn.addEventListener("click", () => {
-    const currentTheme = rootElem.getAttribute("data-theme");
-    if (currentTheme === "dark") {
-      rootElem.removeAttribute("data-theme");
-      localStorage.setItem("theme", "light");
-    } else {
-      rootElem.setAttribute("data-theme", "dark");
-      localStorage.setItem("theme", "dark");
     }
   });
 });
