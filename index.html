@@ -235,7 +235,7 @@
     height: 16px;
     width: 16px;
     stroke: #fff;
-    stroke-width: 2;
+    stroke-width: 2.5;
     stroke-linecap: round;
     stroke-linejoin: round;
     fill: none;
@@ -400,44 +400,14 @@
       font-size: 18px;
     }
   }
-
-
-  /* PIN mező stílus */
-  .pin-entry {
-    display: flex;
-    flex-direction: column;
-    max-width: 200px;
-    margin-bottom: 20px;
-  }
-  .pin-entry label {
-    font-weight: 600;
-    margin-bottom: 6px;
-    color: var(--muted);
-  }
-  .pin-entry input {
-    border: 1.5px solid var(--border);
-    border-radius: 8px;
-    padding: 10px;
-    font-size: 1.2rem;
-    font-weight: 600;
-    text-align: center;
-    letter-spacing: 0.3em;
-    color: var(--text);
-    background-color: var(--card);
-    transition: border-color 0.3s ease;
-    outline: none;
-  }
-  .pin-entry input:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 8px var(--primary);
-  }
 </style>
 </head>
 <body>
 <header>Family Board
   <button id="darkModeToggle" aria-label="Sötét mód kapcsoló" title="Sötét mód váltó">
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24" class="feather feather-moon">
-      <path d="M21 12.79A9 9 0 0111.21 3a7 7 0 0010.79 9.79z"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24" viewBox="0 0 24 24" class="feather feather-moon">
+      <path d="M21 12.79A9 9 0 0111.21 3a7 7 0 0010.79 9.79z"></path>
+    </svg>
   </button>
 </header>
 
@@ -448,12 +418,6 @@
     <button id="nextMonth" aria-label="Következő hónap" title="Következő hónap">&gt;</button>
   </div>
   <div id="calendar"></div>
-
-  <!-- PIN kód beviteli mező -->
-  <div class="pin-entry">
-    <label for="pinInput">Adj meg egy PIN kódot a törléshez:</label>
-    <input id="pinInput" type="text" inputmode="numeric" pattern="\d*" maxlength="4" placeholder="PIN" autocomplete="off" />
-  </div>
 
   <div class="card" aria-label="Teendő lista">
     <h2>📋 Teendők</h2>
@@ -699,8 +663,8 @@ document.addEventListener("DOMContentLoaded", () => {
       delBtn.title = "Törlés";
       delBtn.textContent = "✖";
       delBtn.addEventListener("click", async () => {
-        const pinInputValue = document.getElementById('pinInput').value;
-        if (pinInputValue !== "2025") {
+        const pin = prompt("Add meg a PIN kódot a törléshez:");
+        if (pin !== "2025") {
           alert("Hibás PIN kód!");
           return;
         }
@@ -727,8 +691,8 @@ document.addEventListener("DOMContentLoaded", () => {
       delBtn.title = "Törlés";
       delBtn.textContent = "✖";
       delBtn.addEventListener("click", async () => {
-        const pinInputValue = document.getElementById('pinInput').value;
-        if (pinInputValue !== "2025") {
+        const pin = prompt("Add meg a PIN kódot a törléshez:");
+        if (pin !== "2025") {
           alert("Hibás PIN kód!");
           return;
         }
