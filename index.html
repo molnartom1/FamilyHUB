@@ -106,12 +106,27 @@
   .row {
     display: flex;
     gap: 12px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
   }
-  .row .time-range-group {
+  #taskInput,
+  #shoppingInput {
+    flex: 2 1 0px;
+    min-width: 0;
+  }
+  #taskTimeFrom,
+  #taskTimeTo {
+    flex: 1 1 0px;
+    min-width: 70px;
+  }
+  #addTask, #addShopping {
+    flex: 0 0 48px;
+    width: 48px;
+    height: 48px;
     display: flex;
-    gap: 6px;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
   }
   input[type="text"],
   input[type="time"],
@@ -124,9 +139,6 @@
     transition: border-color 0.3s ease, box-shadow 0.3s ease;
     background: var(--bg);
     color: var(--text);
-    flex-grow: 1;
-    min-width: 160px;
-    max-width: 100%;
     user-select: text;
   }
   input[type="text"]:focus,
@@ -137,24 +149,19 @@
     outline: none;
     background: var(--card);
   }
-  input[type="time"],
-  select {
-    max-width: 130px;
-    flex-grow: 0;
-    text-align: center;
-  }
   button {
     background: var(--primary);
     border-radius: 20px;
-    padding: 14px 20px;
+    padding: 0;
     border: none;
     color: white;
     font-weight: 700;
-    font-size: 1rem;
+    font-size: 1.2rem;
     cursor: pointer;
     user-select: none;
     box-shadow: 0 4px 14px rgba(14, 165, 233, 0.6);
     transition: background 0.3s ease, transform 0.15s ease, box-shadow 0.3s ease;
+    min-width: 0;
   }
   button:hover,
   button:focus {
@@ -216,10 +223,9 @@
     margin-bottom: 24px;
     user-select: none;
   }
-  /* Lapozó gombok négyzetes, középre igazított módosítása */
   #calendar-header button {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     font-size: 20px;
     font-weight: 700;
     border-radius: 50%;
@@ -338,29 +344,21 @@
       padding: 12px 16px;
       border-radius: 14px;
     }
-    button,
-    input[type="text"],
-    input[type="time"],
-    select {
-      font-size: 0.9rem;
-    }
-    .row input[type="text"] {
-      flex: 1 1 62%;
-      padding: 10px;
-    }
+    .row input[type="text"],
     .row input[type="time"] {
-      width: 75px;
       padding: 10px;
+      font-size: 0.9rem;
     }
     .row button {
-      padding: 10px 14px;
       font-size: 0.9rem;
       height: 40px;
-      align-self: center;
+      width: 40px;
+      padding: 0;
     }
-    .row .time-range-group {
-      display: flex;
-      gap: 6px;
+    #calendar-header button {
+      width: 32px;
+      height: 32px;
+      font-size: 18px;
     }
   }
 </style>
@@ -382,10 +380,8 @@
     <h2>📋 Teendők</h2>
     <div class="row">
       <input type="text" id="taskInput" placeholder="Új teendő…" aria-label="Új teendő" />
-      <span class="time-range-group">
-        <input type="time" id="taskTimeFrom" aria-label="Időpont tól (HH:MM)" />
-        <input type="time" id="taskTimeTo" aria-label="Időpont ig (HH:MM)" />
-      </span>
+      <input type="time" id="taskTimeFrom" aria-label="Időpont tól (HH:MM)" />
+      <input type="time" id="taskTimeTo" aria-label="Időpont ig (HH:MM)" />
       <button id="addTask" title="Hozzáadás">+</button>
     </div>
     <ul id="taskList" tabindex="0"></ul>
