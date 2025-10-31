@@ -408,13 +408,9 @@
     }
   }
 </style>
-
 </head>
 
-
-
 <body>
-
 <header>Family Board
   <button id="darkModeToggle" aria-label="Sötét mód kapcsoló" title="Sötét mód váltó">
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon" viewBox="0 0 24 24">
@@ -456,26 +452,8 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
-import {
-  getAuth,
-  onAuthStateChanged,
-  signInAnonymously,
-  setPersistence,
-  browserLocalPersistence
-} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
-import {
-  getFirestore,
-  enableIndexedDbPersistence,
-  collection,
-  addDoc,
-  updateDoc,
-  query,
-  orderBy,
-  onSnapshot,
-  deleteDoc,
-  doc,
-  getDocs
-} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+import { getAuth, onAuthStateChanged, signInAnonymously, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+import { getFirestore, enableIndexedDbPersistence, collection, addDoc, updateDoc, query, orderBy, onSnapshot, deleteDoc, doc, getDocs } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   const firebaseConfig = {
@@ -600,7 +578,9 @@ document.addEventListener("DOMContentLoaded", () => {
         selectedDate = new Date(year, month, day);
         selectedYear = year;
         selectedMonth = month;
-        refreshCalendar();
+        updateCurrentMonthYear(selectedYear, selectedMonth);
+        createCalendar(selectedYear, selectedMonth);
+        loadTasks();
       });
 
       calendarElem.appendChild(dayCell);
@@ -612,11 +592,9 @@ document.addEventListener("DOMContentLoaded", () => {
     currentMonthYearSpan.textContent = date.toLocaleDateString("hu-HU", { year: "numeric", month: "long" });
   }
 
-  async function refreshCalendar() {
+  function refreshCalendar() {
     updateCurrentMonthYear(selectedYear, selectedMonth);
-    await createCalendar(selectedYear, selectedMonth);
-    loadTasks();
-    loadShopping();
+    createCalendar(selectedYear, selectedMonth);
   }
 
   prevMonthBtn.addEventListener("click", () => {
@@ -627,6 +605,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     selectedDate = new Date(selectedYear, selectedMonth, 1);
     refreshCalendar();
+    loadTasks();
   });
 
   nextMonthBtn.addEventListener("click", () => {
@@ -637,6 +616,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     selectedDate = new Date(selectedYear, selectedMonth, 1);
     refreshCalendar();
+    loadTasks();
   });
 
   let unsubscribeTasks = null, unsubscribeShopping = null;
@@ -668,12 +648,14 @@ document.addEventListener("DOMContentLoaded", () => {
           return;
         }
         await deleteDoc(doc(db, `households/${householdId}/tasks`, task.docId));
+        refreshCalendar();
       });
       li.appendChild(delBtn);
       li.querySelector(".tickbox").addEventListener("click", async () => {
         await updateDoc(doc(db, `households/${householdId}/tasks`, task.docId), {
           done: !task.done,
         });
+        refreshCalendar();
       });
       taskList.appendChild(li);
     });
@@ -722,7 +704,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       });
       renderTasks(tasks);
-      refreshCalendar(); // Refresh pöttyök, hogy friss legyen
     });
   }
 
@@ -732,67 +713,81 @@ document.addEventListener("DOMContentLoaded", () => {
     unsubscribeShopping = onSnapshot(q, (snapshot) => {
       const items = [];
       snapshot.forEach((doc) => {
-        items.push({ ...doc.data(), docId: doc.id });
-      });
-      renderShopping(items);
-      // No refreshCalendar itt, mert nem számoljuk be a bevásárló listát a pöttyökbe
+        items.push({ ...doc.data
+      items.push({ ...doc.data(), docId: doc.id });
     });
+    renderShopping(items);
+  });
+}
+
+addTask.addEventListener("click", async () => {
+  const text = taskInput.value.trim();
+  const timeFrom = taskTimeFrom.value.trim();
+  const timeTo = taskTimeTo.value.trim();
+  if (!text) return alert("Adj meg egy teendőt!");
+  const dateStr = formatDate(selectedDate);
+  await addDoc(collection(db, `households/${householdId}/tasks`), {
+    text,
+    timeFrom: timeFrom || "",
+    timeTo: timeTo || "",
+    date: dateStr,
+    createdAt: Date.now(),
+    done: false,
+  });
+  taskInput.value = "";
+  taskTimeFrom.value = "";
+  taskTimeTo.value = "";
+  refreshCalendar(); // naptár pöttyök frissítése
+});
+
+addShopping.addEventListener("click", async () => {
+  const text = shoppingInput.value.trim();
+  if (!text) return alert("Adj meg egy bevásárló tételt!");
+  await addDoc(collection(db, `households/${householdId}/shopping`), {
+    text,
+    createdAt: Date.now(),
+    done: false,
+  });
+  shoppingInput.value = "";
+});
+
+async function init() {
+  await signInAnonymously(auth);
+  updateCurrentMonthYear(selectedYear, selectedMonth);
+  await createCalendar(selectedYear, selectedMonth);
+  loadTasks();
+  loadShopping();
+}
+
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    init();
+  } else {
+    signInAnonymously(auth);
   }
+});
 
-  addTask.addEventListener("click", async () => {
-    const text = taskInput.value.trim();
-    const timeFrom = taskTimeFrom.value.trim();
-    const timeTo = taskTimeTo.value.trim();
-    if (!text) return alert("Adj meg egy teendőt!");
-    const dateStr = formatDate(selectedDate);
-    await addDoc(collection(db, `households/${householdId}/tasks`), {
-      text,
-      timeFrom: timeFrom || "",
-      timeTo: timeTo || "",
-      date: dateStr,
-      createdAt: Date.now(),
-      done: false,
-    });
-    taskInput.value = "";
-    taskTimeFrom.value = "";
-    taskTimeTo.value = "";
-  });
-
-  addShopping.addEventListener("click", async () => {
-    const text = shoppingInput.value.trim();
-    if (!text) return alert("Adj meg egy bevásárló tételt!");
-    await addDoc(collection(db, `households/${householdId}/shopping`), {
-      text,
-      createdAt: Date.now(),
-      done: false,
-    });
-    shoppingInput.value = "";
-  });
-
-  async function init() {
-    await signInAnonymously(auth);
-    refreshCalendar();
-    loadTasks();
-    loadShopping();
+// DARK MODE LOGIKA
+if (localStorage.getItem("theme")) {
+  rootElem.setAttribute("data-theme", localStorage.getItem("theme"));
+}
+toggleBtn.addEventListener("click", () => {
+  const currentTheme = rootElem.getAttribute("data-theme");
+  if (currentTheme === "dark") {
+    rootElem.removeAttribute("data-theme");
+    localStorage.setItem("theme", "light");
+  } else {
+    rootElem.setAttribute("data-theme", "dark");
+    localStorage.setItem("theme", "dark");
   }
-
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      init();
-    } else {
-      signInAnonymously(auth);
-    }
-  });
-
+});
 });
 </script>
 
 <script>
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./sw.js?v=11d-final");
-  }
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("./sw.js?v=11d-final");
+}
 </script>
-
 </body>
-
 </html>
