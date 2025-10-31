@@ -2,12 +2,12 @@
 <html lang="hu">
 
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="theme-color" content="#0ea5e9" />
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#0ea5e9"/>
 <title>FamilyBoard v11d-final</title>
-<link rel="manifest" href="./manifest.webmanifest?v=11d-final" />
+<link rel="manifest" href="./manifest.webmanifest?v=11d-final"/>
 <style>
   :root {
     --primary: #0ea5e9;
@@ -108,6 +108,10 @@
     gap: 12px;
     flex-wrap: wrap;
     align-items: center;
+  }
+  .row .time-range-group {
+    display: flex;
+    gap: 6px;
   }
   input[type="text"],
   input[type="time"],
@@ -212,18 +216,23 @@
     margin-bottom: 24px;
     user-select: none;
   }
+  /* Lapozó gombok négyzetes, középre igazított módosítása */
   #calendar-header button {
     width: 36px;
     height: 36px;
-    font-size: 22px;
+    font-size: 20px;
     font-weight: 700;
-    border-radius: 8px;
+    border-radius: 50%;
     border: none;
     background: var(--primary);
     color: white;
     cursor: pointer;
     box-shadow: 0 4px 12px rgba(14, 165, 233, 0.75);
     transition: background 0.3s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0;
   }
   #calendar-header button:hover,
   #calendar-header button:focus {
@@ -346,6 +355,12 @@
     .row button {
       padding: 10px 14px;
       font-size: 0.9rem;
+      height: 40px;
+      align-self: center;
+    }
+    .row .time-range-group {
+      display: flex;
+      gap: 6px;
     }
   }
 </style>
@@ -367,8 +382,10 @@
     <h2>📋 Teendők</h2>
     <div class="row">
       <input type="text" id="taskInput" placeholder="Új teendő…" aria-label="Új teendő" />
-      <input type="time" id="taskTimeFrom" aria-label="Időpont tól (HH:MM)" />
-      <input type="time" id="taskTimeTo" aria-label="Időpont ig (HH:MM)" />
+      <span class="time-range-group">
+        <input type="time" id="taskTimeFrom" aria-label="Időpont tól (HH:MM)" />
+        <input type="time" id="taskTimeTo" aria-label="Időpont ig (HH:MM)" />
+      </span>
       <button id="addTask" title="Hozzáadás">+</button>
     </div>
     <ul id="taskList" tabindex="0"></ul>
@@ -605,7 +622,6 @@
         renderTasks(tasks);
       });
     }
-
     function renderTasks(tasks) {
       taskList.innerHTML = "";
       tasks.forEach((task) => {
@@ -659,7 +675,6 @@
         renderShopping(items);
       });
     }
-
     function renderShopping(items) {
       shoppingList.innerHTML = "";
       items.forEach((item) => {
@@ -681,7 +696,6 @@
         shoppingList.appendChild(li);
       });
     }
-
     addShopping.addEventListener("click", async () => {
       const text = shoppingInput.value.trim();
       if (!text) return alert("Adj meg egy bevásárló tételt!");
@@ -691,14 +705,12 @@
       });
       shoppingInput.value = "";
     });
-
     async function init() {
       await signInAnonymously(auth);
       refreshCalendar();
       loadTasks();
       loadShopping();
     }
-
     onAuthStateChanged(auth, (user) => {
       if (user) {
         init();
