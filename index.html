@@ -344,23 +344,31 @@
     box-shadow: 0 6px 24px rgba(14, 165, 233, 0.65);
     outline: none;
   }
-  #calendar .selected {
+  #calendar .day.selected {
     background: var(--selected-blue);
     color: white;
     box-shadow: 0 8px 28px rgba(10, 99, 183, 0.9);
     font-weight: 700;
-    position: relative;
   }
-  #calendar .day.selected::after {
-    content: "☀️"; /* Nap ikon */
-    position: absolute;
-    top: 6px;
-    right: 6px;
-    font-size: 18px;
-    color: #fbbf24;
+  #calendar .dot-container {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 8px;
   }
-  [data-theme="dark"] #calendar .day.selected::after {
-    color: #facc15;
+  #calendar .dot {
+    width: 10px;
+    height: 10px;
+    background-color: var(--dot-light-blue);
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(126, 200, 255, 0.8);
+  }
+  #calendar .count {
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 0.9rem;
+    margin-top: 6px;
+    user-select: none;
   }
   @media (max-width: 600px) {
     #calendar {
@@ -402,6 +410,7 @@
   }
 </style>
 </head>
+
 <body>
 <header>Family Board
   <button id="darkModeToggle" aria-label="Sötét mód kapcsoló" title="Sötét mód váltó">
@@ -554,6 +563,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const startDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
     const daysInMonth = lastDay.getDate();
 
+    const today = new Date();
+
     for (let i = 0; i < startDay; i++) {
       const emptyCell = document.createElement("div");
       emptyCell.classList.add("day");
@@ -590,6 +601,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (year === selectedYear && month === selectedMonth && day === selectedDate.getDate()) {
         dayCell.classList.add("selected");
+      }
+
+      if (year === today.getFullYear() && month === today.getMonth() && day === today.getDate()) {
+        dayCell.classList.add("today");
       }
 
       dayCell.addEventListener("click", () => {
@@ -630,18 +645,6 @@ document.addEventListener("DOMContentLoaded", () => {
     refreshCalendar();
   });
 
-  toggleBtn.addEventListener("click", () => {
-    const currentTheme = rootElem.getAttribute("data-theme");
-    if (currentTheme === "dark") {
-      rootElem.removeAttribute("data-theme");
-      localStorage.setItem("theme", "light");
-    } else {
-      rootElem.setAttribute("data-theme", "dark");
-      localStorage.setItem("theme", "dark");
-    }
-  });
-
-  // Checkbox és lista kihúzás
   let unsubscribeTasks = null, unsubscribeShopping = null;
 
   function taskTickbox(checked) {
@@ -654,10 +657,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderTasks(tasks) {
     taskList.innerHTML = "";
-    tasks.forEach(task => {
+    tasks.forEach((task) => {
       const li = document.createElement("li");
       if (task.done) li.classList.add("done");
-      li.innerHTML = taskTickbox(task.done) + `<span class="item-text">${(task.timeFrom && task.timeTo ? `[${task.timeFrom} - ${task.timeTo}] ` : "") + task.text}</span>`;
+      li.innerHTML =
+        taskTickbox(task.done) +
+        `<span class="item-text">${(task.timeFrom && task.timeTo ? `[${task.timeFrom} - ${task.timeTo}] ` : "") + task.text}</span>`;
       const delBtn = document.createElement("button");
       delBtn.className = "delete-btn";
       delBtn.title = "Törlés";
@@ -682,10 +687,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderShopping(items) {
     shoppingList.innerHTML = "";
-    items.forEach(item => {
+    items.forEach((item) => {
       const li = document.createElement("li");
       if (item.done) li.classList.add("done");
-      li.innerHTML = taskTickbox(item.done) + `<span class="item-text">${item.text}</span>`;
+      li.innerHTML =
+        taskTickbox(item.done) +
+        `<span class="item-text">${item.text}</span>`;
       const delBtn = document.createElement("button");
       delBtn.className = "delete-btn";
       delBtn.title = "Törlés";
@@ -711,10 +718,10 @@ document.addEventListener("DOMContentLoaded", () => {
   function loadTasks() {
     if (unsubscribeTasks) unsubscribeTasks();
     const q = query(collection(db, `households/${householdId}/tasks`), orderBy("createdAt", "desc"));
-    unsubscribeTasks = onSnapshot(q, snapshot => {
+    unsubscribeTasks = onSnapshot(q, (snapshot) => {
       const dateStr = formatDate(selectedDate);
       const tasks = [];
-      snapshot.forEach(doc => {
+      snapshot.forEach((doc) => {
         const data = doc.data();
         if (data.date === dateStr) {
           tasks.push({ ...data, docId: doc.id });
@@ -746,9 +753,9 @@ document.addEventListener("DOMContentLoaded", () => {
   function loadShopping() {
     if (unsubscribeShopping) unsubscribeShopping();
     const q = query(collection(db, `households/${householdId}/shopping`), orderBy("createdAt", "desc"));
-    unsubscribeShopping = onSnapshot(q, snapshot => {
+    unsubscribeShopping = onSnapshot(q, (snapshot) => {
       const items = [];
-      snapshot.forEach(doc => {
+      snapshot.forEach((doc) => {
         items.push({ ...doc.data(), docId: doc.id });
       });
       renderShopping(items);
@@ -773,7 +780,7 @@ document.addEventListener("DOMContentLoaded", () => {
     loadShopping();
   }
 
-  onAuthStateChanged(auth, user => {
+  onAuthStateChanged(auth, (user) => {
     if (user) {
       init();
     } else {
@@ -788,5 +795,7 @@ if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("./sw.js?v=11d-final");
 }
 </script>
+
 </body>
+
 </html>
