@@ -22,7 +22,6 @@
     --dot-light-blue: #7ec8ff;
     --danger-red: #e11d48;
   }
-
   [data-theme="dark"] {
     --primary: #9cf;
     --secondary: #66aaff;
@@ -36,11 +35,9 @@
     --dot-light-blue: #5599ff;
     --danger-red: #f87171;
   }
-
   * {
     box-sizing: border-box;
   }
-
   body {
     margin: 0;
     background-color: var(--bg);
@@ -50,7 +47,6 @@
     -moz-osx-font-smoothing: grayscale;
     transition: background-color 0.3s ease, color 0.3s ease;
   }
-
   header {
     background: linear-gradient(135deg, var(--secondary), var(--primary));
     color: white;
@@ -62,7 +58,6 @@
     box-shadow: 0 4px 8px rgba(14, 165, 233, 0.4);
     user-select: none;
   }
-
   #darkModeToggle {
     position: fixed;
     top: 12px;
@@ -79,19 +74,16 @@
     user-select: none;
     z-index: 1000;
   }
-
   #darkModeToggle:hover,
   #darkModeToggle:focus {
     background: var(--secondary);
     outline: none;
   }
-
   .center {
     max-width: 600px;
     margin: 28px auto;
     padding: 0 16px;
   }
-
   .card {
     background: var(--card);
     border-radius: 20px;
@@ -101,11 +93,9 @@
     border: none;
     transition: box-shadow 0.3s ease;
   }
-
   .card:hover {
     box-shadow: 0 8px 26px rgba(0, 0, 0, 0.1);
   }
-
   h2 {
     font-weight: 700;
     margin-bottom: 16px;
@@ -113,14 +103,12 @@
     user-select: none;
     letter-spacing: 0.04em;
   }
-
   .row {
     display: flex;
     gap: 12px;
     flex-wrap: wrap;
     align-items: center;
   }
-
   input[type="text"],
   input[type="time"],
   select {
@@ -137,7 +125,6 @@
     max-width: 100%;
     user-select: text;
   }
-
   input[type="text"]:focus,
   input[type="time"]:focus,
   select:focus {
@@ -146,14 +133,12 @@
     outline: none;
     background: var(--card);
   }
-
   input[type="time"],
   select {
     max-width: 130px;
     flex-grow: 0;
     text-align: center;
   }
-
   button {
     background: var(--primary);
     border-radius: 20px;
@@ -167,7 +152,6 @@
     box-shadow: 0 4px 14px rgba(14, 165, 233, 0.6);
     transition: background 0.3s ease, transform 0.15s ease, box-shadow 0.3s ease;
   }
-
   button:hover,
   button:focus {
     background: var(--secondary);
@@ -175,11 +159,9 @@
     box-shadow: 0 8px 26px rgba(14, 165, 233, 0.85);
     outline: none;
   }
-
   button:active {
     transform: translateY(0);
   }
-
   ul {
     list-style: none;
     padding: 0;
@@ -188,7 +170,6 @@
     overflow-y: auto;
     user-select: text;
   }
-
   li {
     padding: 12px 16px;
     border-radius: 16px;
@@ -202,14 +183,12 @@
     font-size: 1rem;
     transition: background-color 0.2s ease;
   }
-
   li:hover,
   li:focus-within {
     background-color: var(--hover-bg);
     outline: none;
     cursor: pointer;
   }
-
   li button.delete-btn {
     background: transparent;
     border: none;
@@ -221,13 +200,11 @@
     padding: 0 8px;
     transition: color 0.25s ease;
   }
-
   li button.delete-btn:hover,
   li button.delete-btn:focus {
     color: #dc2635;
     outline: none;
   }
-
   #calendar-header {
     display: flex;
     justify-content: space-between;
@@ -235,7 +212,6 @@
     margin-bottom: 24px;
     user-select: none;
   }
-
   #calendar-header button {
     width: 36px;
     height: 36px;
@@ -249,13 +225,11 @@
     box-shadow: 0 4px 12px rgba(14, 165, 233, 0.75);
     transition: background 0.3s ease;
   }
-
   #calendar-header button:hover,
   #calendar-header button:focus {
     background: var(--secondary);
     outline: none;
   }
-
   #currentMonthYear {
     font-weight: 800;
     font-size: 1.3rem;
@@ -263,7 +237,6 @@
     letter-spacing: 0.05em;
     user-select: none;
   }
-
   #calendar {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
@@ -275,7 +248,6 @@
     box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
     user-select: none;
   }
-
   #calendar .day,
   #calendar .day-header {
     padding: 14px 0;
@@ -289,13 +261,11 @@
     font-weight: 600;
     transition: background-color 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
   }
-
   #calendar .day-header {
     color: var(--primary);
     font-weight: 700;
     font-size: 0.95rem;
   }
-
   #calendar .day {
     background: var(--bg);
     border: 1px solid var(--border);
@@ -305,7 +275,6 @@
     color: var(--text);
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
   }
-
   #calendar .day:hover,
   #calendar .day:focus-visible {
     background: var(--primary);
@@ -313,21 +282,18 @@
     box-shadow: 0 6px 24px rgba(14, 165, 233, 0.65);
     outline: none;
   }
-
   #calendar .selected {
     background: var(--selected-blue);
     color: white;
     box-shadow: 0 8px 28px rgba(10, 99, 183, 0.9);
     font-weight: 700;
   }
-
   #calendar .dot-container {
     display: flex;
     justify-content: center;
     gap: 6px;
     margin-top: 8px;
   }
-
   #calendar .dot {
     width: 10px;
     height: 10px;
@@ -335,7 +301,6 @@
     border-radius: 50%;
     box-shadow: 0 2px 6px rgba(126, 200, 255, 0.8);
   }
-
   #calendar .count {
     color: var(--primary);
     font-weight: 700;
@@ -343,7 +308,6 @@
     margin-top: 6px;
     user-select: none;
   }
-
   @media (max-width: 600px) {
     #calendar {
       grid-gap: 8px;
@@ -403,7 +367,8 @@
     <h2>📋 Teendők</h2>
     <div class="row">
       <input type="text" id="taskInput" placeholder="Új teendő…" aria-label="Új teendő" />
-      <input type="time" id="taskTime" aria-label="Idő (HH:MM)" />
+      <input type="time" id="taskTimeFrom" aria-label="Időpont tól (HH:MM)" />
+      <input type="time" id="taskTimeTo" aria-label="Időpont ig (HH:MM)" />
       <button id="addTask" title="Hozzáadás">+</button>
     </div>
     <ul id="taskList" tabindex="0"></ul>
@@ -463,7 +428,8 @@
     const prevMonthBtn = document.getElementById("prevMonth");
     const nextMonthBtn = document.getElementById("nextMonth");
     const taskInput = document.getElementById("taskInput");
-    const taskTime = document.getElementById("taskTime");
+    const taskTimeFrom = document.getElementById("taskTimeFrom");
+    const taskTimeTo = document.getElementById("taskTimeTo");
     const addTask = document.getElementById("addTask");
     const taskList = document.getElementById("taskList");
     const shoppingInput = document.getElementById("shoppingInput");
@@ -644,7 +610,8 @@
       taskList.innerHTML = "";
       tasks.forEach((task) => {
         const li = document.createElement("li");
-        li.textContent = (task.time ? `[${task.time}] ` : "") + task.text;
+        const timePart = task.timeFrom && task.timeTo ? `[${task.timeFrom} - ${task.timeTo}] ` : "";
+        li.textContent = timePart + task.text;
         const delBtn = document.createElement("button");
         delBtn.className = "delete-btn";
         delBtn.title = "Törlés";
@@ -664,17 +631,20 @@
 
     addTask.addEventListener("click", async () => {
       const text = taskInput.value.trim();
-      const time = taskTime.value.trim();
+      const timeFrom = taskTimeFrom.value.trim();
+      const timeTo = taskTimeTo.value.trim();
       if (!text) return alert("Adj meg egy teendőt!");
       const dateStr = formatDate(selectedDate);
       await addDoc(collection(db, `households/${householdId}/tasks`), {
         text,
-        time: time || "",
+        timeFrom: timeFrom || "",
+        timeTo: timeTo || "",
         date: dateStr,
         createdAt: Date.now(),
       });
       taskInput.value = "";
-      taskTime.value = "";
+      taskTimeFrom.value = "";
+      taskTimeTo.value = "";
     });
 
     let unsubscribeShopping = null;
